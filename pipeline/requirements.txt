@@ -1,0 +1,54 @@
+# Seasonality Analyzer - Dependencies
+# Python 3.10+
+
+# Core data processing
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Statistical analysis
+scipy>=1.10.0
+statsmodels>=0.14.0
+
+# Machine learning / preprocessing
+scikit-learn>=1.3.0
+
+# Changepoint detection
+ruptures>=1.1.8
+
+# Time series forecasting (optional)
+prophet>=1.1.4
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+plotly>=5.15.0
+
+# Jupyter
+jupyter>=1.0.0
+ipywidgets>=8.0.0
+tqdm>=4.65.0
+
+# Utilities
+openpyxl>=3.1.0  # Excel export
+
+# CLI / Configuration management
+click>=8.1.0
+hydra-core>=1.3.0
+omegaconf>=2.3.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+PyYAML>=6.0.0
+
+# Logging
+loguru>=0.7.0
+
+# LLM integration
+openai>=1.0.0
+python-dotenv>=1.0.0
+
+# Seasonality detection (Lomb-Scargle)
+astropy>=6.0.0
+
+# Testing (dev)
+pytest>=8.0.0
+pytest-cov>=4.0.0
