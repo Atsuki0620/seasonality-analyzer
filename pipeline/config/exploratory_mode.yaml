@@ -1,0 +1,61 @@
+# Seasonality Analyzer - Exploratory Mode Configuration
+# Lower thresholds for detecting weak seasonality patterns
+
+data:
+  date_column: date
+  time_column: time
+  sensor_columns: null
+  sensor_prefix: sensor_
+
+preprocessing:
+  resample_freq: D
+  resample_method: mean
+  outlier_method: iqr
+  outlier_threshold: 1.5
+  impute_method: linear
+  changepoint_method: none  # Skip changepoint to see full patterns
+  changepoint_penalty: 10.0
+  min_segment_size: 30
+
+detection:
+  periods: [7, 14, 30, 90, 180, 365]  # Extended period candidates
+  methods: [stl, acf, periodogram, fourier]
+  stl_seasonal: 7
+  stl_robust: true
+  acf_max_lag: 500  # Extended lag
+  acf_tolerance: 5  # Wider tolerance
+  periodogram_min_period: 2
+  periodogram_max_period: 500
+  fap_threshold: 0.1  # More lenient significance
+
+scoring:
+  mode: exploratory
+  strict_thresholds:
+    stl_strength: 0.5
+    acf_peak: 0.3
+    delta_r2: 0.1
+  exploratory_thresholds:
+    stl_strength: 0.2
+    acf_peak: 0.15
+    delta_r2: 0.05
+  weights:
+    stl: 0.3
+    acf: 0.3
+    fourier: 0.4
+  confidence_labels: [High, Medium, Low, None]
+
+debug:
+  enable_llm: false
+  provider: auto
+  anonymize_sensors: true
+  mask_paths: true
+
+output:
+  base_dir: outputs
+  results_dir: results
+  figures_dir: figures
+  logs_dir: logs
+  debug_bundles_dir: debug_bundles
+  save_intermediate: true  # Save intermediates for exploration
+  figure_format: png
+  figure_dpi: 150
