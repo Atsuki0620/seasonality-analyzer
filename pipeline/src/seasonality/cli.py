@@ -99,8 +99,11 @@ def run(
         # Load configuration
         with timer.step("load_config"):
             cfg = load_config(config)
-            cfg.output.base_dir = output
-            debug_builder.set_config(cfg.model_dump())
+            cfg.output.base_dir = Path(output)
+            # Convert config to dict with Path objects as strings
+            config_dict = cfg.model_dump()
+            config_dict["output"]["base_dir"] = str(cfg.output.base_dir)
+            debug_builder.set_config(config_dict)
             logger.info(f"Scoring mode: {cfg.scoring.mode}")
             logger.info(f"Target periods: {cfg.detection.periods}")
 
@@ -143,9 +146,17 @@ def run(
         # Preprocess data
         with timer.step("preprocessing"):
             import pandas as pd
-            processed_df = pd.DataFrame(index=df.resample(cfg.preprocessing.resample_freq).mean().index)
+            # Create resampled index from first valid sensor
+            first_sensor_resampled = resample_and_interpolate(
+                df[valid_sensors[0]],
+                resample_freq=cfg.preprocessing.resample_freq,
+                resample_method=cfg.preprocessing.resample_method,
+                interp_method=cfg.preprocessing.impute_method if cfg.preprocessing.impute_method != "none" else None,
+            )
+            processed_df = pd.DataFrame(index=first_sensor_resampled.index)
+            processed_df[valid_sensors[0]] = first_sensor_resampled
 
-            for sensor in valid_sensors:
+            for sensor in valid_sensors[1:]:
                 processed_df[sensor] = resample_and_interpolate(
                     df[sensor],
                     resample_freq=cfg.preprocessing.resample_freq,
@@ -230,7 +241,7 @@ def run(
                 except Exception as e:
                     logger.warning(f"Visualization failed: {e}")
                     errors.append({
-                        "type": "VisualizationError",
+                        "error_type": "VisualizationError",
                         "message": str(e),
                     })
 
@@ -265,7 +276,7 @@ def run(
     except Exception as e:
         logger.exception(f"Pipeline failed: {e}")
         errors.append({
-            "type": type(e).__name__,
+            "error_type": type(e).__name__,
             "message": str(e),
         })
         for err in errors:
