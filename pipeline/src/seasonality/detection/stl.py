@@ -1,4 +1,4 @@
-"""STL (Seasonal-Trend decomposition using Loess) detector."""
+"""STL（Loessを使用した季節-トレンド分解）検出器。"""
 
 from __future__ import annotations
 
@@ -13,10 +13,10 @@ from seasonality.detection.base import BaseDetector, DetectionResult, PeriodResu
 
 
 class STLDetector(BaseDetector):
-    """Seasonality detector using STL decomposition.
+    """STL分解を使用した季節性検出器。
 
-    STL decomposes a time series into Trend, Seasonal, and Residual components.
-    The seasonal strength is measured by the ratio of seasonal variance to residual variance.
+    STLは時系列データをトレンド、季節、残差の各成分に分解します。
+    季節性の強度は、季節成分の分散と残差成分の分散の比率で測定されます。
     """
 
     method_name = "stl"
@@ -27,12 +27,12 @@ class STLDetector(BaseDetector):
         robust: bool = True,
         strength_threshold: float = 0.5,
     ):
-        """Initialize STL detector.
+        """STL検出器を初期化する。
 
         Args:
-            seasonal_smoother: Seasonal smoothing parameter.
-            robust: Whether to use robust fitting.
-            strength_threshold: Threshold for significance.
+            seasonal_smoother: 季節平滑化パラメータ。
+            robust: ロバストフィッティングを使用するかどうか。
+            strength_threshold: 有意性のしきい値。
         """
         self.seasonal_smoother = seasonal_smoother
         self.robust = robust
@@ -43,14 +43,14 @@ class STLDetector(BaseDetector):
         series: pd.Series,
         periods: List[int],
     ) -> DetectionResult:
-        """Detect seasonality using STL decomposition.
+        """STL分解を使用して季節性を検出する。
 
         Args:
-            series: Input time series (should be preprocessed, no NaN).
-            periods: List of target periods to check.
+            series: 入力時系列データ（前処理済み、NaNなし）。
+            periods: 確認する対象周期のリスト。
 
         Returns:
-            DetectionResult with STL scores for each period.
+            各周期のSTLスコアを含むDetectionResult。
         """
         clean_series = self._validate_series(series)
         period_results: Dict[int, PeriodResult] = {}
@@ -67,10 +67,10 @@ class STLDetector(BaseDetector):
         series: pd.Series,
         period: int,
     ) -> Optional[PeriodResult]:
-        """Detect seasonality for a specific period."""
-        # Check minimum data length
+        """特定の周期の季節性を検出する。"""
+        # 最小データ長を確認
         if len(series) < 2 * period:
-            logger.debug(f"STL: Data too short for period {period} ({len(series)} < {2 * period})")
+            logger.debug(f"STL: 周期{period}にはデータが短すぎます（{len(series)} < {2 * period}）")
             return PeriodResult(
                 period=period,
                 score=0.0,
@@ -87,13 +87,13 @@ class STLDetector(BaseDetector):
             )
             result = stl.fit()
 
-            # Calculate seasonal strength (F_season)
+            # 季節性の強度（F_season）を計算
             var_seasonal = np.var(result.seasonal)
             var_residual = np.var(result.resid)
 
             if var_residual > 0:
                 f_season = var_seasonal / var_residual
-                # Normalize to 0-1 range
+                # 0-1の範囲に正規化
                 score = f_season / (f_season + 1)
             else:
                 score = 0.0
@@ -113,7 +113,7 @@ class STLDetector(BaseDetector):
             )
 
         except Exception as e:
-            logger.warning(f"STL failed for period {period}: {e}")
+            logger.warning(f"周期{period}のSTLが失敗しました: {e}")
             return PeriodResult(
                 period=period,
                 score=0.0,
@@ -122,7 +122,7 @@ class STLDetector(BaseDetector):
             )
 
     def _calc_trend_strength(self, stl_result) -> float:
-        """Calculate trend strength from STL result."""
+        """STL結果からトレンドの強度を計算する。"""
         var_trend = np.var(stl_result.trend)
         var_residual = np.var(stl_result.resid)
 
@@ -136,14 +136,14 @@ class STLDetector(BaseDetector):
         series: pd.Series,
         period: int,
     ) -> Optional[Dict[str, pd.Series]]:
-        """Perform STL decomposition and return components.
+        """STL分解を実行し、成分を返す。
 
         Args:
-            series: Input time series.
-            period: Seasonal period.
+            series: 入力時系列データ。
+            period: 季節周期。
 
         Returns:
-            Dictionary with 'trend', 'seasonal', 'residual' components.
+            'trend'、'seasonal'、'residual'成分を含む辞書。
         """
         clean_series = self._validate_series(series)
 
@@ -167,5 +167,5 @@ class STLDetector(BaseDetector):
             }
 
         except Exception as e:
-            logger.warning(f"STL decomposition failed: {e}")
+            logger.warning(f"STL分解が失敗しました: {e}")
             return None

@@ -1,4 +1,4 @@
-"""Debug module for Seasonality Analyzer."""
+"""Seasonality Analyzerのデバッグモジュール"""
 
 from seasonality.debug.bundler import (
     create_debug_bundle,

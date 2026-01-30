@@ -1,4 +1,4 @@
-"""Ranking and classification for seasonality analysis."""
+"""季節性分析のランキングと分類。"""
 
 from __future__ import annotations
 
@@ -16,14 +16,14 @@ def classify_seasonality(
     scores: Dict[str, float],
     config: Optional[ScoringConfig] = None,
 ) -> str:
-    """Classify seasonality confidence level.
+    """季節性の信頼度レベルを分類します。
 
     Args:
-        scores: Dictionary with method scores.
-        config: Scoring configuration with thresholds.
+        scores: 手法スコアを含む辞書
+        config: 閾値を含むスコアリング設定
 
     Returns:
-        Confidence label: 'High', 'Medium', 'Low', or 'None'.
+        信頼度ラベル: 'High', 'Medium', 'Low', または 'None'
     """
     config = config or ScoringConfig()
     mode = config.mode
@@ -83,14 +83,14 @@ def create_scores_dataframe(
     ensemble_results: List[EnsembleResult],
     config: Optional[ScoringConfig] = None,
 ) -> pd.DataFrame:
-    """Create DataFrame with all scores from ensemble results.
+    """アンサンブル結果から全スコアを含むDataFrameを作成します。
 
     Args:
-        ensemble_results: List of ensemble detection results.
-        config: Scoring configuration.
+        ensemble_results: アンサンブル検出結果のリスト
+        config: スコアリング設定
 
     Returns:
-        DataFrame with scores indexed by sensor.
+        センサーでインデックス化されたスコアを含むDataFrame
     """
     config = config or ScoringConfig()
     all_scores = []
@@ -119,20 +119,20 @@ def generate_ranking(
     sort_by: str = "composite_score",
     ascending: bool = False,
 ) -> pd.DataFrame:
-    """Generate ranked DataFrame.
+    """ランク付けされたDataFrameを生成します。
 
     Args:
-        scores_df: DataFrame with scores.
-        sort_by: Column to sort by.
-        ascending: Sort order.
+        scores_df: スコアを含むDataFrame
+        sort_by: ソート基準とする列
+        ascending: ソート順
 
     Returns:
-        Sorted DataFrame with rank column.
+        ランク列を含むソート済みDataFrame
     """
     ranking = scores_df.sort_values(sort_by, ascending=ascending).copy()
     ranking["rank"] = range(1, len(ranking) + 1)
 
-    # Reorder columns to put rank first
+    # ランクを最初の列に配置
     cols = ["rank"] + [c for c in ranking.columns if c != "rank"]
     ranking = ranking[cols]
 
@@ -145,27 +145,27 @@ def get_top_sensors(
     min_confidence: Literal["High", "Medium", "Low", "None"] = "Low",
     mode: Literal["strict", "exploratory"] = "strict",
 ) -> pd.DataFrame:
-    """Get top N sensors by composite score.
+    """総合スコアで上位N個のセンサーを取得します。
 
     Args:
-        scores_df: DataFrame with scores.
-        n: Number of top sensors to return.
-        min_confidence: Minimum confidence level to include.
-        mode: Which confidence column to use.
+        scores_df: スコアを含むDataFrame
+        n: 返却する上位センサーの数
+        min_confidence: 含める最小信頼度レベル
+        mode: 使用する信頼度列
 
     Returns:
-        DataFrame with top sensors.
+        上位センサーを含むDataFrame
     """
     confidence_col = f"confidence_{mode}"
     confidence_order = {"High": 3, "Medium": 2, "Low": 1, "None": 0}
 
     if confidence_col not in scores_df.columns:
-        logger.warning(f"Confidence column {confidence_col} not found")
+        logger.warning(f"信頼度列 {confidence_col} が見つかりません")
         return scores_df.nlargest(n, "composite_score")
 
     min_level = confidence_order.get(min_confidence, 0)
 
-    # Filter by minimum confidence
+    # 最小信頼度でフィルタリング
     filtered = scores_df[
         scores_df[confidence_col].map(confidence_order) >= min_level
     ]
@@ -177,14 +177,14 @@ def summarize_confidence_distribution(
     scores_df: pd.DataFrame,
     mode: Literal["strict", "exploratory"] = "strict",
 ) -> Dict[str, int]:
-    """Summarize distribution of confidence levels.
+    """信頼度レベルの分布を要約します。
 
     Args:
-        scores_df: DataFrame with scores.
-        mode: Which confidence column to use.
+        scores_df: スコアを含むDataFrame
+        mode: 使用する信頼度列
 
     Returns:
-        Dictionary mapping confidence level to count.
+        信頼度レベルをカウントにマッピングした辞書
     """
     confidence_col = f"confidence_{mode}"
 
@@ -199,20 +199,20 @@ def filter_by_period(
     period: int,
     min_score: float = 0.0,
 ) -> pd.DataFrame:
-    """Filter sensors with significant detection at specific period.
+    """特定周期で有意な検出があるセンサーをフィルタリングします。
 
     Args:
-        scores_df: DataFrame with scores.
-        period: Target period.
-        min_score: Minimum combined score.
+        scores_df: スコアを含むDataFrame
+        period: 対象周期
+        min_score: 最小統合スコア
 
     Returns:
-        Filtered DataFrame.
+        フィルタリングされたDataFrame
     """
     period_col = f"combined_{period}"
 
     if period_col not in scores_df.columns:
-        logger.warning(f"Period column {period_col} not found")
+        logger.warning(f"周期列 {period_col} が見つかりません")
         return scores_df
 
     return scores_df[scores_df[period_col] >= min_score]
@@ -222,14 +222,14 @@ def generate_summary_statistics(
     scores_df: pd.DataFrame,
     config: Optional[ScoringConfig] = None,
 ) -> Dict[str, Any]:
-    """Generate summary statistics for the analysis.
+    """分析のサマリー統計を生成します。
 
     Args:
-        scores_df: DataFrame with scores.
-        config: Scoring configuration.
+        scores_df: スコアを含むDataFrame
+        config: スコアリング設定
 
     Returns:
-        Dictionary with summary statistics.
+        サマリー統計を含む辞書
     """
     config = config or ScoringConfig()
 
@@ -239,7 +239,7 @@ def generate_summary_statistics(
         "confidence_distribution_exploratory": summarize_confidence_distribution(scores_df, "exploratory"),
     }
 
-    # Score statistics
+    # スコア統計
     if "composite_score" in scores_df.columns:
         summary["composite_score_stats"] = {
             "mean": float(scores_df["composite_score"].mean()),
@@ -249,7 +249,7 @@ def generate_summary_statistics(
             "median": float(scores_df["composite_score"].median()),
         }
 
-    # Method-specific statistics
+    # 手法固有の統計
     for method in ["stl", "acf", "fourier", "periodogram"]:
         col = f"{method}_max"
         if col in scores_df.columns:
@@ -259,7 +259,7 @@ def generate_summary_statistics(
                 "max": float(scores_df[col].max()),
             }
 
-    # Best period distribution
+    # 最良周期の分布
     if "best_period" in scores_df.columns:
         summary["best_period_distribution"] = (
             scores_df["best_period"].value_counts().to_dict()

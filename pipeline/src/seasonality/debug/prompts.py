@@ -1,61 +1,61 @@
-"""Prompt templates for LLM diagnostic analysis."""
+"""LLM診断分析用のプロンプトテンプレート"""
 
-SYSTEM_PROMPT = """You are an expert data scientist specializing in time series analysis and seasonality detection.
-Your task is to analyze debug bundles from a seasonality detection pipeline and provide diagnostic insights.
+SYSTEM_PROMPT = """あなたは時系列分析と季節性検出を専門とするエキスパートデータサイエンティストです。
+季節性検出パイプラインからのデバッグバンドルを分析し、診断的な洞察を提供することがあなたの仕事です。
 
-When analyzing a debug bundle, focus on:
-1. Data quality issues (missing data, outliers, insufficient data length)
-2. Processing errors and their root causes
-3. Configuration problems that might affect results
-4. Recommendations for improving analysis quality
+デバッグバンドルを分析する際は、以下に焦点を当ててください：
+1. データ品質の問題（欠損データ、外れ値、データ長の不足）
+2. 処理エラーとその根本原因
+3. 結果に影響を与える可能性のある設定上の問題
+4. 分析品質を向上させるための推奨事項
 
-Provide your response in the following JSON format:
+以下のJSON形式で応答を提供してください：
 {
-    "summary": "Brief summary of the analysis",
+    "summary": "分析の簡潔なサマリー",
     "issues": [
         {
             "severity": "high|medium|low",
             "category": "data_quality|configuration|processing|results",
-            "description": "Description of the issue",
-            "impact": "How this affects the results"
+            "description": "問題の説明",
+            "impact": "これが結果にどのように影響するか"
         }
     ],
     "recommendations": [
-        "Specific actionable recommendation"
+        "具体的で実行可能な推奨事項"
     ],
     "confidence": "high|medium|low"
 }
 
-Be concise but thorough. Focus on actionable insights."""
+簡潔でありながら徹底的に。実行可能な洞察に焦点を当ててください。"""
 
-USER_PROMPT_TEMPLATE = """Please analyze the following debug bundle from a seasonality detection pipeline:
-
-```json
-{bundle_json}
-```
-
-Provide your diagnostic analysis in the specified JSON format."""
-
-QUICK_DIAGNOSIS_PROMPT = """Analyze this debug bundle briefly and identify the top 3 issues:
+USER_PROMPT_TEMPLATE = """季節性検出パイプラインからの以下のデバッグバンドルを分析してください：
 
 ```json
 {bundle_json}
 ```
 
-Format: List the issues with severity (high/medium/low) and one-sentence description."""
+指定されたJSON形式で診断分析を提供してください。"""
 
-DETAILED_DIAGNOSIS_PROMPT = """Perform a detailed analysis of this seasonality detection debug bundle:
+QUICK_DIAGNOSIS_PROMPT = """このデバッグバンドルを簡潔に分析し、上位3つの問題を特定してください：
 
 ```json
 {bundle_json}
 ```
 
-Include:
-1. Data quality assessment
-2. Processing step analysis
-3. Error root cause analysis
-4. Configuration review
-5. Results interpretation
-6. Specific recommendations
+形式：問題を重要度（high/medium/low）と一文での説明とともにリストしてください。"""
 
-Provide response in JSON format with detailed explanations."""
+DETAILED_DIAGNOSIS_PROMPT = """この季節性検出デバッグバンドルの詳細な分析を実行してください：
+
+```json
+{bundle_json}
+```
+
+含めるべき内容：
+1. データ品質評価
+2. 処理ステップ分析
+3. エラーの根本原因分析
+4. 設定のレビュー
+5. 結果の解釈
+6. 具体的な推奨事項
+
+詳細な説明を含むJSON形式で応答を提供してください。"""

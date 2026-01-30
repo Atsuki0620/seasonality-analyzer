@@ -1,4 +1,4 @@
-"""Configuration models for Seasonality Analyzer using Pydantic."""
+"""PydanticベースのSeasonality Analyzer設定モデル"""
 
 from __future__ import annotations
 
@@ -10,125 +10,125 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class DataConfig(BaseModel):
-    """Configuration for data loading."""
+    """データ読み込みの設定"""
 
-    date_column: str = Field(default="date", description="Column name for date")
-    time_column: Optional[str] = Field(default="time", description="Column name for time (optional)")
+    date_column: str = Field(default="date", description="日付列名")
+    time_column: Optional[str] = Field(default="time", description="時刻列名（オプション）")
     sensor_columns: Optional[List[str]] = Field(
         default=None,
-        description="List of sensor column names. If None, auto-detect columns starting with 'sensor_'",
+        description="センサー列名のリスト。Noneの場合は'sensor_'で始まる列を自動検出",
     )
-    sensor_prefix: str = Field(default="sensor_", description="Prefix for auto-detecting sensor columns")
+    sensor_prefix: str = Field(default="sensor_", description="センサー列自動検出用のプレフィックス")
 
 
 class PreprocessingConfig(BaseModel):
-    """Configuration for preprocessing pipeline."""
+    """前処理パイプラインの設定"""
 
-    resample_freq: str = Field(default="D", description="Resampling frequency (D=daily, W=weekly, etc.)")
+    resample_freq: str = Field(default="D", description="リサンプリング頻度（D=日次、W=週次など）")
     resample_method: Literal["mean", "median", "ffill"] = Field(
-        default="mean", description="Aggregation method for resampling"
+        default="mean", description="リサンプリングの集約方法"
     )
     outlier_method: Literal["iqr", "zscore", "iforest", "none"] = Field(
-        default="iqr", description="Outlier detection method"
+        default="iqr", description="外れ値検出方法"
     )
-    outlier_threshold: float = Field(default=1.5, description="Threshold for outlier detection (k for IQR, z for zscore)")
+    outlier_threshold: float = Field(default=1.5, description="外れ値検出の閾値（IQRのk値、zscoreのz値）")
     impute_method: Literal["linear", "spline", "ffill", "none"] = Field(
-        default="linear", description="Interpolation method for missing values"
+        default="linear", description="欠損値の補間方法"
     )
     changepoint_method: Literal["pelt", "window", "none"] = Field(
-        default="none", description="Changepoint detection method"
+        default="none", description="変化点検出方法"
     )
-    changepoint_penalty: float = Field(default=10.0, description="Penalty parameter for changepoint detection")
-    min_segment_size: int = Field(default=30, description="Minimum segment size for changepoint detection")
+    changepoint_penalty: float = Field(default=10.0, description="変化点検出のペナルティパラメータ")
+    min_segment_size: int = Field(default=30, description="変化点検出の最小セグメントサイズ")
 
 
 class DetectionConfig(BaseModel):
-    """Configuration for seasonality detection."""
+    """季節性検出の設定"""
 
-    periods: List[int] = Field(default=[7, 30, 365], description="Target periods to detect (in days)")
+    periods: List[int] = Field(default=[7, 30, 365], description="検出対象の周期（日数）")
     methods: List[Literal["stl", "acf", "periodogram", "fourier"]] = Field(
         default=["stl", "acf", "periodogram", "fourier"],
-        description="Detection methods to use",
+        description="使用する検出手法",
     )
-    stl_seasonal: int = Field(default=7, description="Seasonal smoother for STL decomposition")
-    stl_robust: bool = Field(default=True, description="Use robust fitting for STL")
-    acf_max_lag: int = Field(default=400, description="Maximum lag for ACF calculation")
-    acf_tolerance: int = Field(default=3, description="Tolerance for peak detection around target periods")
-    periodogram_min_period: int = Field(default=2, description="Minimum period for Lomb-Scargle")
-    periodogram_max_period: int = Field(default=500, description="Maximum period for Lomb-Scargle")
-    fap_threshold: float = Field(default=0.05, description="False Alarm Probability threshold for significance")
+    stl_seasonal: int = Field(default=7, description="STL分解の季節性スムーザー")
+    stl_robust: bool = Field(default=True, description="STLでロバスト推定を使用")
+    acf_max_lag: int = Field(default=400, description="ACF計算の最大ラグ")
+    acf_tolerance: int = Field(default=3, description="目標周期周辺のピーク検出許容範囲")
+    periodogram_min_period: int = Field(default=2, description="Lomb-Scargle法の最小周期")
+    periodogram_max_period: int = Field(default=500, description="Lomb-Scargle法の最大周期")
+    fap_threshold: float = Field(default=0.05, description="有意性判定の誤警報確率閾値")
 
 
 class StrictThresholds(BaseModel):
-    """Thresholds for strict mode scoring."""
+    """厳密モードスコアリングの閾値"""
 
-    stl_strength: float = Field(default=0.5, description="Minimum STL seasonal strength")
-    acf_peak: float = Field(default=0.3, description="Minimum ACF peak value")
-    delta_r2: float = Field(default=0.1, description="Minimum Fourier delta R²")
+    stl_strength: float = Field(default=0.5, description="STL季節強度の最小値")
+    acf_peak: float = Field(default=0.3, description="ACFピーク値の最小値")
+    delta_r2: float = Field(default=0.1, description="フーリエ変換のデルタR²最小値")
 
 
 class ExploratoryThresholds(BaseModel):
-    """Thresholds for exploratory mode scoring."""
+    """探索モードスコアリングの閾値"""
 
-    stl_strength: float = Field(default=0.2, description="Minimum STL seasonal strength")
-    acf_peak: float = Field(default=0.15, description="Minimum ACF peak value")
-    delta_r2: float = Field(default=0.05, description="Minimum Fourier delta R²")
+    stl_strength: float = Field(default=0.2, description="STL季節強度の最小値")
+    acf_peak: float = Field(default=0.15, description="ACFピーク値の最小値")
+    delta_r2: float = Field(default=0.05, description="フーリエ変換のデルタR²最小値")
 
 
 class ScoringConfig(BaseModel):
-    """Configuration for scoring and classification."""
+    """スコアリングと分類の設定"""
 
-    mode: Literal["strict", "exploratory"] = Field(default="strict", description="Scoring mode")
+    mode: Literal["strict", "exploratory"] = Field(default="strict", description="スコアリングモード")
     strict_thresholds: StrictThresholds = Field(default_factory=StrictThresholds)
     exploratory_thresholds: ExploratoryThresholds = Field(default_factory=ExploratoryThresholds)
     weights: Dict[str, float] = Field(
         default={"stl": 0.3, "acf": 0.3, "fourier": 0.4},
-        description="Weights for composite score calculation",
+        description="複合スコア計算の重み",
     )
     confidence_labels: List[str] = Field(
         default=["High", "Medium", "Low", "None"],
-        description="Confidence level labels",
+        description="信頼度レベルラベル",
     )
 
 
 class AzureOpenAIConfig(BaseModel):
-    """Azure OpenAI configuration."""
+    """Azure OpenAIの設定"""
 
-    api_key_env: str = Field(default="AZURE_OPENAI_API_KEY", description="Environment variable for API key")
-    api_version_env: str = Field(default="AZURE_OPENAI_API_VERSION", description="Environment variable for API version")
-    endpoint_env: str = Field(default="AZURE_OPENAI_ENDPOINT", description="Environment variable for endpoint")
-    deployment_name: str = Field(default="gpt-4", description="Deployment name")
+    api_key_env: str = Field(default="AZURE_OPENAI_API_KEY", description="APIキーの環境変数名")
+    api_version_env: str = Field(default="AZURE_OPENAI_API_VERSION", description="APIバージョンの環境変数名")
+    endpoint_env: str = Field(default="AZURE_OPENAI_ENDPOINT", description="エンドポイントの環境変数名")
+    deployment_name: str = Field(default="gpt-4", description="デプロイメント名")
 
 
 class OpenAIConfig(BaseModel):
-    """OpenAI configuration."""
+    """OpenAIの設定"""
 
-    api_key_env: str = Field(default="OPENAI_API_KEY", description="Environment variable for API key")
-    model: str = Field(default="gpt-4", description="Model name")
+    api_key_env: str = Field(default="OPENAI_API_KEY", description="APIキーの環境変数名")
+    model: str = Field(default="gpt-4", description="モデル名")
 
 
 class DebugConfig(BaseModel):
-    """Configuration for debug and LLM features."""
+    """デバッグとLLM機能の設定"""
 
-    enable_llm: bool = Field(default=False, description="Enable LLM-based diagnostics")
-    provider: Literal["azure", "openai", "auto"] = Field(default="auto", description="LLM provider")
+    enable_llm: bool = Field(default=False, description="LLMベース診断を有効化")
+    provider: Literal["azure", "openai", "auto"] = Field(default="auto", description="LLMプロバイダー")
     azure_openai: AzureOpenAIConfig = Field(default_factory=AzureOpenAIConfig)
     openai: OpenAIConfig = Field(default_factory=OpenAIConfig)
-    anonymize_sensors: bool = Field(default=True, description="Anonymize sensor names in debug bundles")
-    mask_paths: bool = Field(default=True, description="Mask file paths in debug bundles")
+    anonymize_sensors: bool = Field(default=True, description="デバッグバンドル内のセンサー名を匿名化")
+    mask_paths: bool = Field(default=True, description="デバッグバンドル内のファイルパスをマスク")
 
 
 class OutputConfig(BaseModel):
-    """Configuration for output files and directories."""
+    """出力ファイルとディレクトリの設定"""
 
-    base_dir: Path = Field(default=Path("outputs"), description="Base output directory")
-    results_dir: str = Field(default="results", description="Subdirectory for result files")
-    figures_dir: str = Field(default="figures", description="Subdirectory for figure files")
-    logs_dir: str = Field(default="logs", description="Subdirectory for log files")
-    debug_bundles_dir: str = Field(default="debug_bundles", description="Subdirectory for debug bundles")
-    save_intermediate: bool = Field(default=False, description="Save intermediate processing results")
-    figure_format: Literal["png", "svg", "pdf"] = Field(default="png", description="Output format for figures")
-    figure_dpi: int = Field(default=150, description="DPI for figure output")
+    base_dir: Path = Field(default=Path("outputs"), description="ベース出力ディレクトリ")
+    results_dir: str = Field(default="results", description="結果ファイルのサブディレクトリ")
+    figures_dir: str = Field(default="figures", description="図ファイルのサブディレクトリ")
+    logs_dir: str = Field(default="logs", description="ログファイルのサブディレクトリ")
+    debug_bundles_dir: str = Field(default="debug_bundles", description="デバッグバンドルのサブディレクトリ")
+    save_intermediate: bool = Field(default=False, description="中間処理結果を保存")
+    figure_format: Literal["png", "svg", "pdf"] = Field(default="png", description="図の出力形式")
+    figure_dpi: int = Field(default=150, description="図の出力DPI")
 
     @field_validator("base_dir", mode="before")
     @classmethod
@@ -139,7 +139,7 @@ class OutputConfig(BaseModel):
 
 
 class SeasonalityConfig(BaseModel):
-    """Main configuration model for Seasonality Analyzer."""
+    """Seasonality Analyzerのメイン設定モデル"""
 
     data: DataConfig = Field(default_factory=DataConfig)
     preprocessing: PreprocessingConfig = Field(default_factory=PreprocessingConfig)
@@ -150,30 +150,30 @@ class SeasonalityConfig(BaseModel):
 
     @classmethod
     def from_yaml(cls, path: Path | str) -> "SeasonalityConfig":
-        """Load configuration from a YAML file."""
+        """YAMLファイルから設定を読み込む"""
         path = Path(path)
         if not path.exists():
-            raise FileNotFoundError(f"Configuration file not found: {path}")
+            raise FileNotFoundError(f"設定ファイルが見つかりません: {path}")
         with open(path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
         return cls.model_validate(data or {})
 
     def to_yaml(self, path: Path | str) -> None:
-        """Save configuration to a YAML file."""
+        """設定をYAMLファイルに保存"""
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
             yaml.dump(self.model_dump(), f, default_flow_style=False, allow_unicode=True)
 
     def merge_with(self, override: Dict[str, Any]) -> "SeasonalityConfig":
-        """Merge current config with override dict."""
+        """現在の設定とオーバーライド辞書をマージ"""
         current = self.model_dump()
         _deep_merge(current, override)
         return SeasonalityConfig.model_validate(current)
 
 
 def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> None:
-    """Deep merge override dict into base dict."""
+    """オーバーライド辞書をベース辞書に深くマージ"""
     for key, value in override.items():
         if key in base and isinstance(base[key], dict) and isinstance(value, dict):
             _deep_merge(base[key], value)
@@ -182,14 +182,14 @@ def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> None:
 
 
 def load_config(path: Optional[Path | str] = None, overrides: Optional[Dict[str, Any]] = None) -> SeasonalityConfig:
-    """Load configuration from file with optional overrides.
+    """ファイルから設定を読み込み、オプションでオーバーライドを適用
 
     Args:
-        path: Path to YAML configuration file. If None, uses default config.
-        overrides: Dictionary of override values.
+        path: YAML設定ファイルのパス。Noneの場合はデフォルト設定を使用
+        overrides: オーバーライド値の辞書
 
     Returns:
-        SeasonalityConfig instance.
+        SeasonalityConfigインスタンス
     """
     if path is not None:
         config = SeasonalityConfig.from_yaml(path)

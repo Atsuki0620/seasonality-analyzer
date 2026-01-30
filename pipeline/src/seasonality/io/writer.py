@@ -1,4 +1,4 @@
-"""Output writing utilities for Seasonality Analyzer."""
+"""Seasonality Analyzerの出力書き込みユーティリティ"""
 
 from __future__ import annotations
 
@@ -14,13 +14,13 @@ from seasonality.config import OutputConfig
 
 
 def ensure_output_dirs(config: OutputConfig) -> Dict[str, Path]:
-    """Ensure all output directories exist.
+    """すべての出力ディレクトリが存在することを確認
 
     Args:
-        config: Output configuration.
+        config: 出力設定
 
     Returns:
-        Dictionary mapping directory names to paths.
+        ディレクトリ名からパスへのマッピング辞書
     """
     dirs = {
         "results": config.base_dir / config.results_dir,
@@ -31,7 +31,7 @@ def ensure_output_dirs(config: OutputConfig) -> Dict[str, Path]:
 
     for name, path in dirs.items():
         path.mkdir(parents=True, exist_ok=True)
-        logger.debug(f"Ensured directory: {path}")
+        logger.debug(f"ディレクトリを確保しました: {path}")
 
     return dirs
 
@@ -41,15 +41,15 @@ def save_scores_csv(
     output_path: Path | str,
     include_timestamp: bool = True,
 ) -> Path:
-    """Save scores DataFrame to CSV.
+    """スコアDataFrameをCSVに保存
 
     Args:
-        scores_df: DataFrame containing seasonality scores.
-        output_path: Output file path.
-        include_timestamp: Whether to include timestamp in filename.
+        scores_df: 季節性スコアを含むDataFrame
+        output_path: 出力ファイルパス
+        include_timestamp: ファイル名にタイムスタンプを含めるか
 
     Returns:
-        Path to saved file.
+        保存されたファイルのパス
     """
     output_path = Path(output_path)
 
@@ -61,7 +61,7 @@ def save_scores_csv(
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     scores_df.to_csv(output_path)
-    logger.info(f"Saved scores to: {output_path}")
+    logger.info(f"スコアを保存しました: {output_path}")
 
     return output_path
 
@@ -71,15 +71,15 @@ def save_results(
     output_dir: Path | str,
     prefix: str = "results",
 ) -> Dict[str, Path]:
-    """Save analysis results to multiple files.
+    """分析結果を複数のファイルに保存
 
     Args:
-        results: Dictionary containing analysis results.
-        output_dir: Output directory.
-        prefix: Filename prefix.
+        results: 分析結果を含む辞書
+        output_dir: 出力ディレクトリ
+        prefix: ファイル名プレフィックス
 
     Returns:
-        Dictionary mapping result types to file paths.
+        結果タイプからファイルパスへのマッピング辞書
     """
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -87,41 +87,41 @@ def save_results(
     saved_files = {}
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # Save scores if present
+    # スコアが存在する場合は保存
     if "scores" in results and isinstance(results["scores"], pd.DataFrame):
         scores_path = output_dir / f"{prefix}_scores_{timestamp}.csv"
         results["scores"].to_csv(scores_path)
         saved_files["scores"] = scores_path
-        logger.info(f"Saved scores: {scores_path}")
+        logger.info(f"スコアを保存しました: {scores_path}")
 
-    # Save ranking if present
+    # ランキングが存在する場合は保存
     if "ranking" in results and isinstance(results["ranking"], pd.DataFrame):
         ranking_path = output_dir / f"{prefix}_ranking_{timestamp}.csv"
         results["ranking"].to_csv(ranking_path)
         saved_files["ranking"] = ranking_path
-        logger.info(f"Saved ranking: {ranking_path}")
+        logger.info(f"ランキングを保存しました: {ranking_path}")
 
-    # Save summary statistics if present
+    # サマリー統計が存在する場合は保存
     if "summary" in results:
         summary_path = output_dir / f"{prefix}_summary_{timestamp}.json"
         with open(summary_path, "w", encoding="utf-8") as f:
             json.dump(_make_json_serializable(results["summary"]), f, indent=2, ensure_ascii=False)
         saved_files["summary"] = summary_path
-        logger.info(f"Saved summary: {summary_path}")
+        logger.info(f"サマリーを保存しました: {summary_path}")
 
-    # Save config if present
+    # 設定が存在する場合は保存
     if "config" in results:
         config_path = output_dir / f"{prefix}_config_{timestamp}.json"
         with open(config_path, "w", encoding="utf-8") as f:
             json.dump(_make_json_serializable(results["config"]), f, indent=2, ensure_ascii=False)
         saved_files["config"] = config_path
-        logger.info(f"Saved config: {config_path}")
+        logger.info(f"設定を保存しました: {config_path}")
 
     return saved_files
 
 
 def _make_json_serializable(obj: Any) -> Any:
-    """Convert object to JSON-serializable format."""
+    """オブジェクトをJSONシリアライズ可能な形式に変換"""
     if isinstance(obj, dict):
         return {k: _make_json_serializable(v) for k, v in obj.items()}
     elif isinstance(obj, list):
@@ -130,7 +130,7 @@ def _make_json_serializable(obj: Any) -> Any:
         return obj.isoformat()
     elif isinstance(obj, Path):
         return str(obj)
-    elif hasattr(obj, "model_dump"):  # Pydantic model
+    elif hasattr(obj, "model_dump"):  # Pydanticモデル
         return obj.model_dump()
     elif hasattr(obj, "__dict__"):
         return _make_json_serializable(obj.__dict__)
@@ -141,26 +141,26 @@ def _make_json_serializable(obj: Any) -> Any:
 def export_html_report(
     scores_df: pd.DataFrame,
     output_path: Path | str,
-    title: str = "Seasonality Analysis Report",
+    title: str = "季節性分析レポート",
     figures: Optional[List[Path]] = None,
     metadata: Optional[Dict[str, Any]] = None,
 ) -> Path:
-    """Export analysis results as HTML report.
+    """分析結果をHTMLレポートとしてエクスポート
 
     Args:
-        scores_df: DataFrame containing seasonality scores.
-        output_path: Output file path.
-        title: Report title.
-        figures: List of figure paths to embed.
-        metadata: Additional metadata to include.
+        scores_df: 季節性スコアを含むDataFrame
+        output_path: 出力ファイルパス
+        title: レポートタイトル
+        figures: 埋め込む図のパスのリスト
+        metadata: 含める追加メタデータ
 
     Returns:
-        Path to saved HTML file.
+        保存されたHTMLファイルのパス
     """
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Generate HTML content
+    # HTMLコンテンツ生成
     html_parts = [
         "<!DOCTYPE html>",
         "<html lang='ja'>",
@@ -174,13 +174,13 @@ def export_html_report(
         "</head>",
         "<body>",
         f"  <h1>{title}</h1>",
-        f"  <p class='timestamp'>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>",
+        f"  <p class='timestamp'>生成日時: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>",
     ]
 
-    # Add metadata section
+    # メタデータセクション追加
     if metadata:
         html_parts.append("  <section class='metadata'>")
-        html_parts.append("    <h2>Analysis Configuration</h2>")
+        html_parts.append("    <h2>分析設定</h2>")
         html_parts.append("    <dl>")
         for key, value in metadata.items():
             html_parts.append(f"      <dt>{key}</dt>")
@@ -188,16 +188,16 @@ def export_html_report(
         html_parts.append("    </dl>")
         html_parts.append("  </section>")
 
-    # Add scores table
+    # スコア表追加
     html_parts.append("  <section class='scores'>")
-    html_parts.append("    <h2>Seasonality Scores</h2>")
+    html_parts.append("    <h2>季節性スコア</h2>")
     html_parts.append(_dataframe_to_html(scores_df))
     html_parts.append("  </section>")
 
-    # Add figures
+    # 図を追加
     if figures:
         html_parts.append("  <section class='figures'>")
-        html_parts.append("    <h2>Visualizations</h2>")
+        html_parts.append("    <h2>可視化</h2>")
         for fig_path in figures:
             if fig_path.exists():
                 html_parts.append(f"    <figure>")
@@ -211,16 +211,16 @@ def export_html_report(
         "</html>",
     ])
 
-    # Write HTML file
+    # HTMLファイル書き込み
     with open(output_path, "w", encoding="utf-8") as f:
         f.write("\n".join(html_parts))
 
-    logger.info(f"Exported HTML report: {output_path}")
+    logger.info(f"HTMLレポートをエクスポートしました: {output_path}")
     return output_path
 
 
 def _get_report_css() -> str:
-    """Get CSS styles for HTML report."""
+    """HTMLレポート用のCSSスタイルを取得"""
     return """
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
@@ -261,33 +261,33 @@ def _get_report_css() -> str:
 
 
 def _dataframe_to_html(df: pd.DataFrame) -> str:
-    """Convert DataFrame to styled HTML table."""
-    # Select display columns
+    """DataFrameをスタイル付きHTML表に変換"""
+    # 表示列を選択
     display_cols = []
     priority_cols = ["composite_score", "confidence_strict", "confidence_exploratory",
                      "stl_max", "acf_max", "fourier_full"]
     for col in priority_cols:
         if col in df.columns:
             display_cols.append(col)
-    # Add remaining columns
+    # 残りの列を追加
     for col in df.columns:
         if col not in display_cols:
             display_cols.append(col)
 
-    # Build HTML table
-    html = ["<table>", "<thead><tr><th>Sensor</th>"]
-    for col in display_cols[:10]:  # Limit columns
+    # HTML表を構築
+    html = ["<table>", "<thead><tr><th>センサー</th>"]
+    for col in display_cols[:10]:  # 列数を制限
         html.append(f"<th>{col}</th>")
     html.append("</tr></thead>")
 
     html.append("<tbody>")
-    for idx, row in df.head(50).iterrows():  # Limit rows
+    for idx, row in df.head(50).iterrows():  # 行数を制限
         html.append(f"<tr><td>{idx}</td>")
         for col in display_cols[:10]:
             value = row.get(col, "")
             if isinstance(value, float):
                 value = f"{value:.4f}"
-            # Add confidence class
+            # 信頼度クラスを追加
             css_class = ""
             if col in ["confidence_strict", "confidence_exploratory"]:
                 css_class = f" class='{str(value).lower()}'"
@@ -296,6 +296,6 @@ def _dataframe_to_html(df: pd.DataFrame) -> str:
     html.append("</tbody></table>")
 
     if len(df) > 50:
-        html.append(f"<p><em>Showing first 50 of {len(df)} sensors</em></p>")
+        html.append(f"<p><em>{len(df)}センサー中、最初の50個を表示</em></p>")
 
     return "\n".join(html)

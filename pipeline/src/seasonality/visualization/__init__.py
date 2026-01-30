@@ -1,4 +1,4 @@
-"""Visualization module for Seasonality Analyzer."""
+"""Seasonality Analyzerの可視化モジュール"""
 
 from seasonality.visualization.decomposition import (
     plot_stl_decomposition,

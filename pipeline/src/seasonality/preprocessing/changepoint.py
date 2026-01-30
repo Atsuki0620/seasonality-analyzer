@@ -1,4 +1,4 @@
-"""Changepoint detection utilities for time series data."""
+"""時系列データの変化点検出ユーティリティ"""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from loguru import logger
 
 @dataclass
 class Segment:
-    """A segment of time series data between changepoints."""
+    """変化点間の時系列データのセグメント"""
 
     start_idx: pd.Timestamp
     end_idx: pd.Timestamp
@@ -28,23 +28,23 @@ def detect_changepoints_pelt(
     min_size: int = 30,
     penalty: float = 10.0,
 ) -> List[pd.Timestamp]:
-    """Detect changepoints using PELT algorithm.
+    """PELTアルゴリズムを使用して変化点を検出
 
-    PELT (Pruned Exact Linear Time) is an exact algorithm for
-    detecting multiple changepoints with linear time complexity.
+    PELT（Pruned Exact Linear Time）は線形時間計算量で
+    複数の変化点を検出する厳密なアルゴリズム。
 
     Args:
-        series: Input time series (must be without NaN).
-        model: Cost model ('rbf', 'l1', 'l2', 'normal').
-        min_size: Minimum segment size.
-        penalty: Penalty parameter controlling number of changepoints.
+        series: 入力時系列（NaNを含まないこと）
+        model: コストモデル（'rbf', 'l1', 'l2', 'normal'）
+        min_size: 最小セグメントサイズ
+        penalty: 変化点数を制御するペナルティパラメータ
 
     Returns:
-        List of changepoint timestamps.
+        変化点のタイムスタンプリスト
     """
     data = series.dropna()
     if len(data) < 2 * min_size:
-        logger.warning(f"Data too short for changepoint detection: {len(data)} < {2 * min_size}")
+        logger.warning(f"変化点検出にはデータが短すぎます: {len(data)} < {2 * min_size}")
         return []
 
     values = data.values
@@ -52,10 +52,10 @@ def detect_changepoints_pelt(
     algo = rpt.Pelt(model=model, min_size=min_size).fit(values)
     result = algo.predict(pen=penalty)
 
-    # Convert indices to timestamps (excluding the last element which is len(data))
+    # インデックスをタイムスタンプに変換（最後の要素len(data)は除外）
     change_indices = [data.index[i - 1] for i in result[:-1] if i < len(data)]
 
-    logger.debug(f"PELT detected {len(change_indices)} changepoints")
+    logger.debug(f"PELTで{len(change_indices)}個の変化点を検出しました")
     return change_indices
 
 
@@ -66,23 +66,23 @@ def detect_changepoints_window(
     width: int = 50,
     penalty: float = 10.0,
 ) -> List[pd.Timestamp]:
-    """Detect changepoints using sliding window algorithm.
+    """スライディングウィンドウアルゴリズムを使用して変化点を検出
 
-    Window-based detection is more suitable for local changes.
+    ウィンドウベースの検出は局所的な変化により適している。
 
     Args:
-        series: Input time series (must be without NaN).
-        model: Cost model.
-        min_size: Minimum segment size.
-        width: Window width.
-        penalty: Penalty parameter.
+        series: 入力時系列（NaNを含まないこと）
+        model: コストモデル
+        min_size: 最小セグメントサイズ
+        width: ウィンドウ幅
+        penalty: ペナルティパラメータ
 
     Returns:
-        List of changepoint timestamps.
+        変化点のタイムスタンプリスト
     """
     data = series.dropna()
     if len(data) < 2 * min_size:
-        logger.warning(f"Data too short for changepoint detection: {len(data)} < {2 * min_size}")
+        logger.warning(f"変化点検出にはデータが短すぎます: {len(data)} < {2 * min_size}")
         return []
 
     values = data.values
@@ -90,10 +90,10 @@ def detect_changepoints_window(
     algo = rpt.Window(model=model, min_size=min_size, width=width).fit(values)
     result = algo.predict(pen=penalty)
 
-    # Convert indices to timestamps
+    # インデックスをタイムスタンプに変換
     change_indices = [data.index[i - 1] for i in result[:-1] if i < len(data)]
 
-    logger.debug(f"Window detected {len(change_indices)} changepoints")
+    logger.debug(f"Windowで{len(change_indices)}個の変化点を検出しました")
     return change_indices
 
 
@@ -105,18 +105,18 @@ def detect_changepoints(
     penalty: float = 10.0,
     width: int = 50,
 ) -> List[pd.Timestamp]:
-    """Detect changepoints using specified method.
+    """指定された方法で変化点を検出
 
     Args:
-        series: Input time series.
-        method: Detection method ('pelt' or 'window').
-        model: Cost model for ruptures.
-        min_size: Minimum segment size.
-        penalty: Penalty parameter.
-        width: Window width (for window method).
+        series: 入力時系列
+        method: 検出方法（'pelt'または'window'）
+        model: rupturesのコストモデル
+        min_size: 最小セグメントサイズ
+        penalty: ペナルティパラメータ
+        width: ウィンドウ幅（windowメソッド用）
 
     Returns:
-        List of changepoint timestamps.
+        変化点のタイムスタンプリスト
     """
     if method == "pelt":
         return detect_changepoints_pelt(
@@ -127,21 +127,21 @@ def detect_changepoints(
             series, model=model, min_size=min_size, width=width, penalty=penalty
         )
     else:
-        raise ValueError(f"Unknown changepoint method: {method}")
+        raise ValueError(f"不明な変化点検出方法: {method}")
 
 
 def segment_by_changepoints(
     series: pd.Series,
     changepoints: List[pd.Timestamp],
 ) -> List[Segment]:
-    """Split time series into segments at changepoints.
+    """変化点で時系列をセグメントに分割
 
     Args:
-        series: Input time series.
-        changepoints: List of changepoint timestamps.
+        series: 入力時系列
+        changepoints: 変化点のタイムスタンプリスト
 
     Returns:
-        List of Segment objects.
+        Segmentオブジェクトのリスト
     """
     segments = []
     boundaries = [series.index[0]] + sorted(changepoints) + [series.index[-1]]
@@ -150,7 +150,7 @@ def segment_by_changepoints(
         start = boundaries[i]
         end = boundaries[i + 1]
 
-        # Get segment data (inclusive on both ends)
+        # セグメントデータを取得（両端を含む）
         mask = (series.index >= start) & (series.index <= end)
         segment_data = series[mask]
 
@@ -169,14 +169,14 @@ def segment_statistics(
     series: pd.Series,
     changepoints: List[pd.Timestamp],
 ) -> pd.DataFrame:
-    """Calculate statistics for each segment.
+    """各セグメントの統計を計算
 
     Args:
-        series: Input time series.
-        changepoints: List of changepoint timestamps.
+        series: 入力時系列
+        changepoints: 変化点のタイムスタンプリスト
 
     Returns:
-        DataFrame with segment statistics.
+        セグメント統計を含むDataFrame
     """
     segments = segment_by_changepoints(series, changepoints)
 

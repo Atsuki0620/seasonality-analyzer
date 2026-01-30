@@ -1,4 +1,4 @@
-"""Missing value imputation utilities for time series data."""
+"""時系列データの欠損値補間ユーティリティ"""
 
 from __future__ import annotations
 
@@ -16,27 +16,27 @@ def interpolate_missing(
     limit_direction: Literal["forward", "backward", "both"] = "both",
     order: int = 3,
 ) -> pd.Series:
-    """Interpolate missing values in time series.
+    """時系列の欠損値を補間
 
     Args:
-        series: Input time series with timestamp index.
-        method: Interpolation method:
-            - 'linear': Linear interpolation
-            - 'spline': Spline interpolation
-            - 'polynomial': Polynomial interpolation
-            - 'time': Time-weighted interpolation
-        limit: Maximum number of consecutive NaNs to fill.
-        limit_direction: Direction to fill ('forward', 'backward', 'both').
-        order: Order for spline/polynomial interpolation.
+        series: タイムスタンプインデックスを持つ入力時系列
+        method: 補間方法:
+            - 'linear': 線形補間
+            - 'spline': スプライン補間
+            - 'polynomial': 多項式補間
+            - 'time': 時間重み付き補間
+        limit: 連続するNaNの最大補間数
+        limit_direction: 補間方向（'forward', 'backward', 'both'）
+        order: スプライン/多項式補間の次数
 
     Returns:
-        Series with missing values interpolated.
+        欠損値が補間された系列
     """
     if series.isna().sum() == 0:
         return series
 
     n_missing = series.isna().sum()
-    logger.debug(f"Interpolating {n_missing} missing values using {method}")
+    logger.debug(f"{method}を使用して{n_missing}個の欠損値を補間しています")
 
     if method == "linear":
         return series.interpolate(
@@ -65,21 +65,21 @@ def interpolate_missing(
             limit_direction=limit_direction,
         )
     else:
-        raise ValueError(f"Unknown interpolation method: {method}")
+        raise ValueError(f"不明な補間方法: {method}")
 
 
 def forward_fill(
     series: pd.Series,
     limit: Optional[int] = None,
 ) -> pd.Series:
-    """Forward fill missing values.
+    """欠損値を前方補完
 
     Args:
-        series: Input time series.
-        limit: Maximum number of consecutive NaNs to fill.
+        series: 入力時系列
+        limit: 連続するNaNの最大補完数
 
     Returns:
-        Series with forward-filled values.
+        前方補完された系列
     """
     return series.ffill(limit=limit)
 
@@ -88,14 +88,14 @@ def backward_fill(
     series: pd.Series,
     limit: Optional[int] = None,
 ) -> pd.Series:
-    """Backward fill missing values.
+    """欠損値を後方補完
 
     Args:
-        series: Input time series.
-        limit: Maximum number of consecutive NaNs to fill.
+        series: 入力時系列
+        limit: 連続するNaNの最大補完数
 
     Returns:
-        Series with backward-filled values.
+        後方補完された系列
     """
     return series.bfill(limit=limit)
 
@@ -104,32 +104,32 @@ def fill_with_seasonal_mean(
     series: pd.Series,
     period: int = 7,
 ) -> pd.Series:
-    """Fill missing values with seasonal mean.
+    """欠損値を季節平均で補完
 
-    Useful when data has clear seasonality (e.g., day-of-week effects).
+    明確な季節性がある場合に有用（例: 曜日効果）。
 
     Args:
-        series: Input time series with timestamp index.
-        period: Seasonal period (default: 7 for weekly).
+        series: タイムスタンプインデックスを持つ入力時系列
+        period: 季節周期（デフォルト: 7は週次）
 
     Returns:
-        Series with seasonally-filled missing values.
+        季節的に補完された欠損値を持つ系列
     """
     result = series.copy()
 
-    # Calculate day-of-week (or period) means
+    # 曜日（または周期）平均を計算
     if period == 7:
         seasonal_idx = series.index.dayofweek
     else:
-        # Use modulo of day count for custom periods
+        # カスタム周期の日数の剰余を使用
         day_count = (series.index - series.index[0]).days
         seasonal_idx = day_count % period
 
-    # Calculate mean for each seasonal position
+    # 各季節位置の平均を計算
     temp_df = pd.DataFrame({"value": series, "season": seasonal_idx})
     seasonal_means = temp_df.groupby("season")["value"].mean()
 
-    # Fill missing values
+    # 欠損値を補完
     for i, val in enumerate(result):
         if pd.isna(val):
             season = seasonal_idx[i] if isinstance(seasonal_idx, pd.Series) else seasonal_idx
@@ -149,21 +149,21 @@ def impute_missing(
     limit: Optional[int] = None,
     **kwargs,
 ) -> pd.Series:
-    """Impute missing values using specified method.
+    """指定された方法で欠損値を補間
 
     Args:
-        series: Input time series.
-        method: Imputation method:
-            - 'linear': Linear interpolation
-            - 'spline': Spline interpolation
-            - 'ffill': Forward fill
-            - 'seasonal': Seasonal mean fill
-            - 'none': No imputation
-        limit: Maximum consecutive NaNs to fill.
-        **kwargs: Additional method-specific parameters.
+        series: 入力時系列
+        method: 補間方法:
+            - 'linear': 線形補間
+            - 'spline': スプライン補間
+            - 'ffill': 前方補完
+            - 'seasonal': 季節平均補完
+            - 'none': 補間なし
+        limit: 連続するNaNの最大補完数
+        **kwargs: 追加の方法固有パラメータ
 
     Returns:
-        Series with imputed values.
+        補間された値を持つ系列
     """
     if method == "none":
         return series
@@ -179,22 +179,22 @@ def impute_missing(
         period = kwargs.get("period", 7)
         return fill_with_seasonal_mean(series, period=period)
     else:
-        raise ValueError(f"Unknown imputation method: {method}")
+        raise ValueError(f"不明な補間方法: {method}")
 
 
 def get_missing_report(series: pd.Series) -> dict:
-    """Generate report on missing values in series.
+    """系列の欠損値に関するレポートを生成
 
     Args:
-        series: Input time series.
+        series: 入力時系列
 
     Returns:
-        Dictionary with missing value statistics.
+        欠損値統計を含む辞書
     """
     total = len(series)
     missing = series.isna().sum()
 
-    # Find longest gap
+    # 最長ギャップを検索
     is_missing = series.isna()
     gaps = []
     gap_start = None

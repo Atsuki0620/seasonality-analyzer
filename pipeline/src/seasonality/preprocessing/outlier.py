@@ -1,4 +1,4 @@
-"""Outlier detection utilities for time series data."""
+"""時系列データの外れ値検出ユーティリティ"""
 
 from __future__ import annotations
 
@@ -15,14 +15,14 @@ def detect_outliers_iqr(
     series: pd.Series,
     k: float = 1.5,
 ) -> pd.Series:
-    """Detect outliers using IQR method.
+    """IQR法を使用して外れ値を検出
 
     Args:
-        series: Input time series.
-        k: Multiplier for IQR (default: 1.5).
+        series: 入力時系列
+        k: IQRの乗数（デフォルト: 1.5）
 
     Returns:
-        Boolean series indicating outliers.
+        外れ値を示すブール型系列
     """
     Q1 = series.quantile(0.25)
     Q3 = series.quantile(0.75)
@@ -36,14 +36,14 @@ def detect_outliers_zscore(
     series: pd.Series,
     threshold: float = 3.0,
 ) -> pd.Series:
-    """Detect outliers using Z-score method.
+    """Zスコア法を使用して外れ値を検出
 
     Args:
-        series: Input time series.
-        threshold: Z-score threshold (default: 3.0).
+        series: 入力時系列
+        threshold: Zスコア閾値（デフォルト: 3.0）
 
     Returns:
-        Boolean series indicating outliers.
+        外れ値を示すブール型系列
     """
     data = series.dropna()
     if len(data) == 0:
@@ -59,15 +59,15 @@ def detect_outliers_iforest(
     contamination: float = 0.05,
     random_state: int = 42,
 ) -> pd.Series:
-    """Detect outliers using Isolation Forest.
+    """Isolation Forestを使用して外れ値を検出
 
     Args:
-        series: Input time series.
-        contamination: Expected proportion of outliers.
-        random_state: Random seed for reproducibility.
+        series: 入力時系列
+        contamination: 外れ値の予想割合
+        random_state: 再現性のための乱数シード
 
     Returns:
-        Boolean series indicating outliers.
+        外れ値を示すブール型系列
     """
     data = series.dropna()
     if len(data) == 0:
@@ -90,16 +90,16 @@ def detect_outliers(
     threshold: Optional[float] = None,
     **kwargs,
 ) -> pd.Series:
-    """Detect outliers using specified method.
+    """指定された方法で外れ値を検出
 
     Args:
-        series: Input time series.
-        method: Detection method ('iqr', 'zscore', 'iforest').
-        threshold: Method-specific threshold.
-        **kwargs: Additional method-specific parameters.
+        series: 入力時系列
+        method: 検出方法（'iqr', 'zscore', 'iforest'）
+        threshold: 方法固有の閾値
+        **kwargs: 追加の方法固有パラメータ
 
     Returns:
-        Boolean series indicating outliers.
+        外れ値を示すブール型系列
     """
     if method == "iqr":
         k = threshold if threshold is not None else 1.5
@@ -115,7 +115,7 @@ def detect_outliers(
             **kwargs,
         )
     else:
-        raise ValueError(f"Unknown outlier detection method: {method}")
+        raise ValueError(f"不明な外れ値検出方法: {method}")
 
 
 def remove_outliers(
@@ -125,26 +125,26 @@ def remove_outliers(
     replace_with: Literal["nan", "median", "interpolate"] = "nan",
     **kwargs,
 ) -> pd.Series:
-    """Remove or replace outliers in time series.
+    """時系列の外れ値を削除または置換
 
     Args:
-        series: Input time series.
-        method: Detection method.
-        threshold: Detection threshold.
-        replace_with: How to handle outliers:
-            - 'nan': Replace with NaN
-            - 'median': Replace with series median
-            - 'interpolate': Replace with interpolated values
+        series: 入力時系列
+        method: 検出方法
+        threshold: 検出閾値
+        replace_with: 外れ値の処理方法:
+            - 'nan': NaNで置換
+            - 'median': 系列の中央値で置換
+            - 'interpolate': 補間値で置換
 
     Returns:
-        Series with outliers removed/replaced.
+        外れ値が削除/置換された系列
     """
     outliers = detect_outliers(series, method=method, threshold=threshold, **kwargs)
     result = series.copy()
 
     n_outliers = outliers.sum()
     if n_outliers > 0:
-        logger.debug(f"Detected {n_outliers} outliers ({n_outliers/len(series)*100:.2f}%)")
+        logger.debug(f"{n_outliers}個の外れ値を検出しました（{n_outliers/len(series)*100:.2f}%）")
 
         if replace_with == "nan":
             result[outliers] = np.nan
@@ -154,7 +154,7 @@ def remove_outliers(
             result[outliers] = np.nan
             result = result.interpolate(method="linear")
         else:
-            raise ValueError(f"Unknown replace_with value: {replace_with}")
+            raise ValueError(f"不明なreplace_with値: {replace_with}")
 
     return result
 
@@ -164,22 +164,22 @@ def detect_outliers_rolling(
     window: int = 30,
     threshold: float = 3.0,
 ) -> pd.Series:
-    """Detect outliers using rolling window Z-score.
+    """ローリングウィンドウZスコアを使用して外れ値を検出
 
-    Useful for detecting local anomalies in non-stationary data.
+    非定常データの局所的な異常を検出するのに有用。
 
     Args:
-        series: Input time series.
-        window: Rolling window size.
-        threshold: Z-score threshold.
+        series: 入力時系列
+        window: ローリングウィンドウサイズ
+        threshold: Zスコア閾値
 
     Returns:
-        Boolean series indicating outliers.
+        外れ値を示すブール型系列
     """
     rolling_mean = series.rolling(window=window, center=True, min_periods=1).mean()
     rolling_std = series.rolling(window=window, center=True, min_periods=1).std()
 
-    # Avoid division by zero
+    # ゼロ除算を回避
     rolling_std = rolling_std.replace(0, np.nan)
 
     z_scores = np.abs((series - rolling_mean) / rolling_std)

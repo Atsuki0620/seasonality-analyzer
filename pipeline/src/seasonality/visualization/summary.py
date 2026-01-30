@@ -1,4 +1,4 @@
-"""Summary visualizations for seasonality analysis."""
+"""季節性分析のためのサマリー可視化モジュール。"""
 
 from __future__ import annotations
 
@@ -23,19 +23,19 @@ def create_thumbnail_grid(
     save_path: Optional[Path] = None,
     dpi: int = 150,
 ) -> plt.Figure:
-    """Create thumbnail grid of all sensors.
+    """全センサーのサムネイルグリッドを作成します。
 
     Args:
-        df: DataFrame with sensor data.
-        sensor_cols: List of sensor column names.
-        scores_df: Optional DataFrame with scores for annotation.
-        n_cols: Number of columns in grid.
-        figsize: Figure size.
-        save_path: Path to save figure.
-        dpi: Figure resolution.
+        df: センサーデータを含むDataFrame。
+        sensor_cols: センサー列名のリスト。
+        scores_df: アノテーション用のスコアを含むオプションのDataFrame。
+        n_cols: グリッドの列数。
+        figsize: 図のサイズ。
+        save_path: 図を保存するパス。
+        dpi: 図の解像度。
 
     Returns:
-        Matplotlib Figure object.
+        Matplotlib Figureオブジェクト。
     """
     n_sensors = len(sensor_cols)
     n_rows = (n_sensors + n_cols - 1) // n_cols
@@ -52,7 +52,7 @@ def create_thumbnail_grid(
 
             ax.plot(data.index, data.values, "b-", linewidth=0.3)
 
-            # Add score annotation if available
+            # 利用可能な場合はスコアアノテーションを追加
             if scores_df is not None and sensor in scores_df.index:
                 score = scores_df.loc[sensor, "composite_score"] if "composite_score" in scores_df.columns else 0
                 conf = scores_df.loc[sensor, "confidence_strict"] if "confidence_strict" in scores_df.columns else "N/A"
@@ -60,13 +60,13 @@ def create_thumbnail_grid(
             else:
                 ax.set_title(sensor, fontsize=8)
         else:
-            ax.set_title(f"{sensor}\n(not found)", fontsize=8)
-            ax.text(0.5, 0.5, "No data", ha="center", va="center")
+            ax.set_title(f"{sensor}\n(見つかりません)", fontsize=8)
+            ax.text(0.5, 0.5, "データなし", ha="center", va="center")
 
         ax.tick_params(axis="both", labelsize=6)
         ax.grid(True, alpha=0.2)
 
-    # Hide unused subplots
+    # 未使用のサブプロットを非表示
     for i in range(n_sensors, len(axes)):
         axes[i].set_visible(False)
 
@@ -74,7 +74,7 @@ def create_thumbnail_grid(
 
     if save_path:
         fig.savefig(save_path, dpi=dpi, bbox_inches="tight")
-        logger.info(f"Saved thumbnail grid: {save_path}")
+        logger.info(f"サムネイルグリッドを保存しました: {save_path}")
 
     return fig
 
@@ -88,19 +88,19 @@ def create_detailed_report(
     save_path: Optional[Path] = None,
     dpi: int = 150,
 ) -> plt.Figure:
-    """Create detailed report figure for a single sensor.
+    """単一センサーの詳細レポート図を作成します。
 
     Args:
-        df: DataFrame with sensor data.
-        sensor: Sensor column name.
-        periods: Target periods for analysis.
-        scores: Optional dictionary with scores.
-        figsize: Figure size.
-        save_path: Path to save figure.
-        dpi: Figure resolution.
+        df: センサーデータを含むDataFrame。
+        sensor: センサー列名。
+        periods: 分析のターゲット周期。
+        scores: スコアを含むオプションの辞書。
+        figsize: 図のサイズ。
+        save_path: 図を保存するパス。
+        dpi: 図の解像度。
 
     Returns:
-        Matplotlib Figure object.
+        Matplotlib Figureオブジェクト。
     """
     from seasonality.detection.stl import STLDetector
     from seasonality.detection.acf import ACFDetector
@@ -110,25 +110,25 @@ def create_detailed_report(
 
     fig = plt.figure(figsize=figsize)
 
-    # Prepare data
+    # データ準備
     if sensor not in df.columns:
-        logger.warning(f"Sensor {sensor} not found in DataFrame")
+        logger.warning(f"センサー {sensor} がDataFrameに見つかりません")
         return fig
 
     data = resample_and_interpolate(df[sensor], resample_freq="D", resample_method="mean", interp_method="linear")
     data = data.dropna()
 
     if len(data) < 100:
-        logger.warning(f"Insufficient data for {sensor}: {len(data)} points")
+        logger.warning(f"{sensor}のデータが不足しています: {len(data)}ポイント")
         return fig
 
-    # 1. Original time series
+    # 1. 元の時系列
     ax1 = fig.add_subplot(4, 3, 1)
     ax1.plot(data.index, data.values, "b-", linewidth=0.5)
-    ax1.set_title("Original Time Series")
+    ax1.set_title("元の時系列")
     ax1.grid(True, alpha=0.3)
 
-    # 2-4. STL decomposition
+    # 2-4. STL分解
     stl_detector = STLDetector()
     period = periods[1] if len(periods) > 1 and periods[1] <= len(data) // 2 else periods[0]
     decomp = stl_detector.decompose(data, period)
@@ -136,19 +136,19 @@ def create_detailed_report(
     if decomp:
         ax2 = fig.add_subplot(4, 3, 2)
         ax2.plot(decomp["trend"].index, decomp["trend"].values, "g-", linewidth=1)
-        ax2.set_title("Trend")
+        ax2.set_title("トレンド")
         ax2.grid(True, alpha=0.3)
 
         ax3 = fig.add_subplot(4, 3, 3)
         ax3.plot(decomp["seasonal"].index, decomp["seasonal"].values, "r-", linewidth=0.5)
         result = stl_detector.detect(data, [period])
         score = result.get_score(period)
-        ax3.set_title(f"Seasonal (score={score:.3f})")
+        ax3.set_title(f"季節成分 (スコア={score:.3f})")
         ax3.grid(True, alpha=0.3)
 
         ax4 = fig.add_subplot(4, 3, 4)
         ax4.plot(decomp["residual"].index, decomp["residual"].values, "gray", linewidth=0.5)
-        ax4.set_title("Residual")
+        ax4.set_title("残差")
         ax4.grid(True, alpha=0.3)
 
     # 5-6. ACF/PACF
@@ -159,13 +159,13 @@ def create_detailed_report(
         for p in periods:
             if p <= max_lag:
                 ax5.axvline(x=p, color="red", linestyle="--", alpha=0.5)
-        ax5.set_title("ACF")
+        ax5.set_title("自己相関(ACF)")
 
         ax6 = fig.add_subplot(4, 3, 6)
         plot_pacf(data, ax=ax6, lags=min(50, max_lag), alpha=0.05, method="ywm")
-        ax6.set_title("PACF")
+        ax6.set_title("偏自己相関(PACF)")
 
-    # 7. Periodogram
+    # 7. 周期図
     ls_detector = LombScargleDetector()
     periodogram = ls_detector.compute_full_periodogram(data)
 
@@ -174,52 +174,52 @@ def create_detailed_report(
         p_arr = np.array(periodogram["periods"])
         mask = p_arr <= 100
         ax7.plot(p_arr[mask], np.array(periodogram["powers"])[mask], "b-", linewidth=0.5)
-        ax7.set_title("Periodogram (0-100d)")
-        ax7.set_xlabel("Period (days)")
+        ax7.set_title("周期図 (0-100d)")
+        ax7.set_xlabel("周期(日)")
         for p in periods:
             if p <= 100:
                 ax7.axvline(x=p, color="red", linestyle="--", alpha=0.5)
         ax7.grid(True, alpha=0.3)
 
-    # 8. Fourier regression
+    # 8. フーリエ回帰
     fourier_detector = FourierDetector()
     predictions = fourier_detector.fit_and_predict(data, periods)
 
     if predictions is not None:
         delta_r2 = fourier_detector.get_delta_r2(data, periods)
         ax8 = fig.add_subplot(4, 3, 8)
-        ax8.plot(data.index, data.values, "b-", linewidth=0.3, alpha=0.5, label="Observed")
-        ax8.plot(predictions.index, predictions.values, "r-", linewidth=1, label=f"Fit (ΔR²={delta_r2.get('full', 0):.4f})")
-        ax8.set_title("Fourier Regression")
+        ax8.plot(data.index, data.values, "b-", linewidth=0.3, alpha=0.5, label="観測値")
+        ax8.plot(predictions.index, predictions.values, "r-", linewidth=1, label=f"フィット (ΔR²={delta_r2.get('full', 0):.4f})")
+        ax8.set_title("フーリエ回帰")
         ax8.legend(fontsize=8)
         ax8.grid(True, alpha=0.3)
 
-    # 9. Scores summary text
+    # 9. スコアサマリーテキスト
     ax9 = fig.add_subplot(4, 3, 9)
     ax9.axis("off")
 
     if scores:
         summary_lines = [
-            "Seasonality Scores Summary",
+            "季節性スコアサマリー",
             "",
-            f"Composite Score: {scores.get('composite_score', 'N/A'):.4f}" if isinstance(scores.get('composite_score'), float) else f"Composite Score: {scores.get('composite_score', 'N/A')}",
-            f"Confidence (Strict): {scores.get('confidence_strict', 'N/A')}",
-            f"Confidence (Exploratory): {scores.get('confidence_exploratory', 'N/A')}",
+            f"総合スコア: {scores.get('composite_score', 'N/A'):.4f}" if isinstance(scores.get('composite_score'), float) else f"総合スコア: {scores.get('composite_score', 'N/A')}",
+            f"信頼度(厳格): {scores.get('confidence_strict', 'N/A')}",
+            f"信頼度(探索的): {scores.get('confidence_exploratory', 'N/A')}",
             "",
-            f"STL Max: {scores.get('stl_max', 'N/A'):.4f}" if isinstance(scores.get('stl_max'), float) else f"STL Max: {scores.get('stl_max', 'N/A')}",
-            f"ACF Max: {scores.get('acf_max', 'N/A'):.4f}" if isinstance(scores.get('acf_max'), float) else f"ACF Max: {scores.get('acf_max', 'N/A')}",
-            f"Fourier Max: {scores.get('fourier_max', 'N/A'):.4f}" if isinstance(scores.get('fourier_max'), float) else f"Fourier Max: {scores.get('fourier_max', 'N/A')}",
+            f"STL最大: {scores.get('stl_max', 'N/A'):.4f}" if isinstance(scores.get('stl_max'), float) else f"STL最大: {scores.get('stl_max', 'N/A')}",
+            f"ACF最大: {scores.get('acf_max', 'N/A'):.4f}" if isinstance(scores.get('acf_max'), float) else f"ACF最大: {scores.get('acf_max', 'N/A')}",
+            f"Fourier最大: {scores.get('fourier_max', 'N/A'):.4f}" if isinstance(scores.get('fourier_max'), float) else f"Fourier最大: {scores.get('fourier_max', 'N/A')}",
         ]
         ax9.text(0.1, 0.5, "\n".join(summary_lines), fontsize=10, family="monospace", verticalalignment="center")
     else:
-        ax9.text(0.5, 0.5, "No scores available", ha="center", va="center")
+        ax9.text(0.5, 0.5, "スコアが利用できません", ha="center", va="center")
 
-    fig.suptitle(f"{sensor} - Detailed Seasonality Report", fontsize=14, y=1.02)
+    fig.suptitle(f"{sensor} - 詳細季節性レポート", fontsize=14, y=1.02)
     plt.tight_layout()
 
     if save_path:
         fig.savefig(save_path, dpi=dpi, bbox_inches="tight")
-        logger.info(f"Saved detailed report: {save_path}")
+        logger.info(f"詳細レポートを保存しました: {save_path}")
 
     return fig
 
@@ -231,49 +231,49 @@ def plot_confidence_distribution(
     save_path: Optional[Path] = None,
     dpi: int = 150,
 ) -> plt.Figure:
-    """Plot distribution of confidence levels.
+    """信頼度レベルの分布をプロットします。
 
     Args:
-        scores_df: DataFrame with scores.
-        mode: 'strict' or 'exploratory'.
-        figsize: Figure size.
-        save_path: Path to save figure.
-        dpi: Figure resolution.
+        scores_df: スコアを含むDataFrame。
+        mode: 'strict'または'exploratory'。
+        figsize: 図のサイズ。
+        save_path: 図を保存するパス。
+        dpi: 図の解像度。
 
     Returns:
-        Matplotlib Figure object.
+        Matplotlib Figureオブジェクト。
     """
     fig, axes = plt.subplots(1, 2, figsize=figsize)
 
     confidence_col = f"confidence_{mode}"
 
     if confidence_col not in scores_df.columns:
-        logger.warning(f"Column {confidence_col} not found")
+        logger.warning(f"列 {confidence_col} が見つかりません")
         return fig
 
-    # Bar chart
+    # 棒グラフ
     counts = scores_df[confidence_col].value_counts()
     colors = {"High": "#4CAF50", "Medium": "#FF9800", "Low": "#2196F3", "None": "#9E9E9E"}
     bar_colors = [colors.get(level, "gray") for level in counts.index]
 
     axes[0].bar(counts.index, counts.values, color=bar_colors, edgecolor="black")
-    axes[0].set_title(f"Confidence Distribution ({mode.capitalize()} Mode)")
-    axes[0].set_xlabel("Confidence Level")
-    axes[0].set_ylabel("Count")
+    axes[0].set_title(f"信頼度分布 ({mode.capitalize()}モード)")
+    axes[0].set_xlabel("信頼度レベル")
+    axes[0].set_ylabel("カウント")
 
-    # Add count labels
+    # カウントラベルを追加
     for i, (level, count) in enumerate(counts.items()):
         axes[0].text(i, count + 0.5, str(count), ha="center", fontsize=10)
 
-    # Pie chart
+    # 円グラフ
     axes[1].pie(counts.values, labels=counts.index, colors=bar_colors, autopct="%1.1f%%", startangle=90)
-    axes[1].set_title("Proportion")
+    axes[1].set_title("割合")
 
     plt.tight_layout()
 
     if save_path:
         fig.savefig(save_path, dpi=dpi, bbox_inches="tight")
-        logger.info(f"Saved confidence distribution: {save_path}")
+        logger.info(f"信頼度分布を保存しました: {save_path}")
 
     return fig
 
@@ -287,29 +287,29 @@ def plot_score_heatmap(
     save_path: Optional[Path] = None,
     dpi: int = 150,
 ) -> plt.Figure:
-    """Plot heatmap of scores by method and period.
+    """手法と周期別のスコアヒートマップをプロットします。
 
     Args:
-        scores_df: DataFrame with scores.
-        methods: Methods to include.
-        periods: Periods to include.
-        top_n: Number of top sensors to show.
-        figsize: Figure size.
-        save_path: Path to save figure.
-        dpi: Figure resolution.
+        scores_df: スコアを含むDataFrame。
+        methods: 含める手法。
+        periods: 含める周期。
+        top_n: 表示する上位センサーの数。
+        figsize: 図のサイズ。
+        save_path: 図を保存するパス。
+        dpi: 図の解像度。
 
     Returns:
-        Matplotlib Figure object.
+        Matplotlib Figureオブジェクト。
     """
     import seaborn as sns
 
-    # Select top sensors
+    # 上位センサーを選択
     if "composite_score" in scores_df.columns:
         top_sensors = scores_df.nlargest(top_n, "composite_score").index
     else:
         top_sensors = scores_df.index[:top_n]
 
-    # Build heatmap data
+    # ヒートマップデータを構築
     columns = []
     for method in methods:
         for period in periods:
@@ -318,22 +318,22 @@ def plot_score_heatmap(
                 columns.append(col)
 
     if not columns:
-        logger.warning("No score columns found for heatmap")
+        logger.warning("ヒートマップ用のスコア列が見つかりません")
         fig, ax = plt.subplots(figsize=figsize)
-        ax.text(0.5, 0.5, "No data available", ha="center", va="center")
+        ax.text(0.5, 0.5, "データが利用できません", ha="center", va="center")
         return fig
 
     heatmap_data = scores_df.loc[top_sensors, columns]
 
     fig, ax = plt.subplots(figsize=figsize)
     sns.heatmap(heatmap_data, annot=True, fmt=".2f", cmap="YlOrRd", ax=ax)
-    ax.set_title(f"Seasonality Scores Heatmap (Top {top_n} Sensors)")
-    ax.set_ylabel("Sensor")
+    ax.set_title(f"季節性スコアヒートマップ (上位{top_n}センサー)")
+    ax.set_ylabel("センサー")
 
     plt.tight_layout()
 
     if save_path:
         fig.savefig(save_path, dpi=dpi, bbox_inches="tight")
-        logger.info(f"Saved score heatmap: {save_path}")
+        logger.info(f"スコアヒートマップを保存しました: {save_path}")
 
     return fig

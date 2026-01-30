@@ -1,4 +1,4 @@
-"""Resampling utilities for time series data."""
+"""時系列データのリサンプリングユーティリティ"""
 
 from __future__ import annotations
 
@@ -12,14 +12,14 @@ def resample_to_daily(
     series: pd.Series,
     method: Literal["mean", "median", "ffill"] = "mean",
 ) -> pd.Series:
-    """Resample time series to daily frequency.
+    """時系列を日次頻度にリサンプリング
 
     Args:
-        series: Input time series with timestamp index.
-        method: Aggregation method ('mean', 'median', 'ffill').
+        series: タイムスタンプインデックスを持つ入力時系列
+        method: 集約方法（'mean', 'median', 'ffill'）
 
     Returns:
-        Resampled series with daily frequency.
+        日次頻度にリサンプリングされた系列
     """
     if method == "mean":
         return series.resample("D").mean()
@@ -28,7 +28,7 @@ def resample_to_daily(
     elif method == "ffill":
         return series.resample("D").ffill()
     else:
-        raise ValueError(f"Unknown resample method: {method}")
+        raise ValueError(f"不明なリサンプリング方法: {method}")
 
 
 def resample_and_interpolate(
@@ -38,20 +38,20 @@ def resample_and_interpolate(
     interp_method: Optional[Literal["linear", "spline", "ffill"]] = "linear",
     spline_order: int = 3,
 ) -> pd.Series:
-    """Resample time series and interpolate missing values.
+    """時系列をリサンプリングし、欠損値を補間
 
     Args:
-        series: Input time series with timestamp index.
-        resample_freq: Resampling frequency (e.g., 'D' for daily).
-        resample_method: Aggregation method for resampling.
-        interp_method: Interpolation method for missing values.
-            None means no interpolation (keep NaN).
-        spline_order: Order for spline interpolation.
+        series: タイムスタンプインデックスを持つ入力時系列
+        resample_freq: リサンプリング頻度（例: 'D'は日次）
+        resample_method: リサンプリングの集約方法
+        interp_method: 欠損値の補間方法
+            Noneの場合は補間なし（NaNを保持）
+        spline_order: スプライン補間の次数
 
     Returns:
-        Resampled and interpolated series.
+        リサンプリングおよび補間された系列
     """
-    # Resample
+    # リサンプリング
     if resample_method == "mean":
         resampled = series.resample(resample_freq).mean()
     elif resample_method == "median":
@@ -59,9 +59,9 @@ def resample_and_interpolate(
     elif resample_method == "ffill":
         resampled = series.resample(resample_freq).ffill()
     else:
-        raise ValueError(f"Unknown resample_method: {resample_method}")
+        raise ValueError(f"不明なリサンプリング方法: {resample_method}")
 
-    # Interpolate
+    # 補間
     if interp_method is None:
         return resampled
     elif interp_method == "linear":
@@ -71,7 +71,7 @@ def resample_and_interpolate(
     elif interp_method == "ffill":
         return resampled.ffill()
     else:
-        raise ValueError(f"Unknown interp_method: {interp_method}")
+        raise ValueError(f"不明な補間方法: {interp_method}")
 
 
 def resample_dataframe(
@@ -81,17 +81,17 @@ def resample_dataframe(
     resample_method: Literal["mean", "median", "ffill"] = "mean",
     interp_method: Optional[Literal["linear", "spline", "ffill"]] = "linear",
 ) -> pd.DataFrame:
-    """Resample entire DataFrame with multiple sensor columns.
+    """複数のセンサー列を持つDataFrame全体をリサンプリング
 
     Args:
-        df: Input DataFrame with timestamp index.
-        sensor_cols: List of sensor column names.
-        resample_freq: Resampling frequency.
-        resample_method: Aggregation method.
-        interp_method: Interpolation method.
+        df: タイムスタンプインデックスを持つ入力DataFrame
+        sensor_cols: センサー列名のリスト
+        resample_freq: リサンプリング頻度
+        resample_method: 集約方法
+        interp_method: 補間方法
 
     Returns:
-        Resampled DataFrame.
+        リサンプリングされたDataFrame
     """
     result = pd.DataFrame(index=df.resample(resample_freq).mean().index)
 
@@ -104,6 +104,6 @@ def resample_dataframe(
                 interp_method=interp_method,
             )
         else:
-            logger.warning(f"Column {col} not found in DataFrame")
+            logger.warning(f"列 {col} がDataFrameに見つかりません")
 
     return result

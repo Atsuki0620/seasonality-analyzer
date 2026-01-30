@@ -1,4 +1,4 @@
-"""Fourier regression detector."""
+"""フーリエ回帰検出器。"""
 
 from __future__ import annotations
 
@@ -14,10 +14,10 @@ from seasonality.detection.base import BaseDetector, DetectionResult, PeriodResu
 
 
 class FourierDetector(BaseDetector):
-    """Seasonality detector using Fourier regression.
+    """フーリエ回帰を使用した季節性検出器。
 
-    Fits sine/cosine terms for target periods and measures
-    improvement in R² score (delta R²).
+    対象周期のサイン/コサイン項を適合し、
+    R²スコアの改善（デルタR²）を測定します。
     """
 
     method_name = "fourier"
@@ -26,10 +26,10 @@ class FourierDetector(BaseDetector):
         self,
         delta_r2_threshold: float = 0.1,
     ):
-        """Initialize Fourier detector.
+        """フーリエ検出器を初期化する。
 
         Args:
-            delta_r2_threshold: Minimum delta R² for significance.
+            delta_r2_threshold: 有意性の最小デルタR²。
         """
         self.delta_r2_threshold = delta_r2_threshold
 
@@ -38,34 +38,34 @@ class FourierDetector(BaseDetector):
         series: pd.Series,
         periods: List[int],
     ) -> DetectionResult:
-        """Detect seasonality using Fourier regression.
+        """フーリエ回帰を使用して季節性を検出する。
 
         Args:
-            series: Input time series (should be preprocessed, no NaN).
-            periods: List of target periods to check.
+            series: 入力時系列データ（前処理済み、NaNなし）。
+            periods: 確認する対象周期のリスト。
 
         Returns:
-            DetectionResult with delta R² for each period.
+            各周期のデルタR²を含むDetectionResult。
         """
         clean_series = self._validate_series(series)
 
-        # Convert timestamps to days
+        # タイムスタンプを日数に変換
         t = (clean_series.index - clean_series.index[0]).days.values.astype(float)
         y = clean_series.values
 
-        # Baseline model (constant only)
+        # ベースラインモデル（定数のみ）
         X_base = np.ones((len(t), 1))
         model_base = LinearRegression().fit(X_base, y)
         r2_base = r2_score(y, model_base.predict(X_base))
 
         period_results: Dict[int, PeriodResult] = {}
 
-        # Evaluate each period individually
+        # 各周期を個別に評価
         for period in periods:
             result = self._detect_period(t, y, period, r2_base)
             period_results[period] = result
 
-        # Also compute full model with all periods
+        # すべての周期を含む完全なモデルも計算
         full_result = self._compute_full_model(t, y, periods, r2_base)
 
         return self._create_result(
@@ -84,8 +84,8 @@ class FourierDetector(BaseDetector):
         period: int,
         r2_base: float,
     ) -> PeriodResult:
-        """Evaluate single period with Fourier regression."""
-        # Create Fourier features
+        """フーリエ回帰で単一周期を評価する。"""
+        # フーリエ特徴量を作成
         sin_term = np.sin(2 * np.pi * t / period)
         cos_term = np.cos(2 * np.pi * t / period)
 
@@ -98,7 +98,7 @@ class FourierDetector(BaseDetector):
 
             significant = delta_r2 > self.delta_r2_threshold
 
-            # Normalize delta_r2 to 0-1 range (cap at 1)
+            # デルタR²を0-1の範囲に正規化（1で上限）
             score = min(max(delta_r2 * 10, 0), 1)
 
             return PeriodResult(
@@ -115,7 +115,7 @@ class FourierDetector(BaseDetector):
             )
 
         except Exception as e:
-            logger.warning(f"Fourier regression failed for period {period}: {e}")
+            logger.warning(f"周期{period}のフーリエ回帰が失敗しました: {e}")
             return PeriodResult(
                 period=period,
                 score=0.0,
@@ -130,7 +130,7 @@ class FourierDetector(BaseDetector):
         periods: List[int],
         r2_base: float,
     ) -> Dict[str, float]:
-        """Compute model with all periods combined."""
+        """すべての周期を組み合わせたモデルを計算する。"""
         X_full = [np.ones(len(t))]
 
         for period in periods:
@@ -149,7 +149,7 @@ class FourierDetector(BaseDetector):
                 "delta_r2": float(delta_r2),
             }
         except Exception as e:
-            logger.warning(f"Full Fourier model failed: {e}")
+            logger.warning(f"完全なフーリエモデルが失敗しました: {e}")
             return {"r2": r2_base, "delta_r2": 0.0}
 
     def fit_and_predict(
@@ -157,21 +157,21 @@ class FourierDetector(BaseDetector):
         series: pd.Series,
         periods: List[int],
     ) -> Optional[pd.Series]:
-        """Fit Fourier model and return predictions.
+        """フーリエモデルを適合し、予測を返す。
 
         Args:
-            series: Input time series.
-            periods: Periods to include in model.
+            series: 入力時系列データ。
+            periods: モデルに含める周期。
 
         Returns:
-            Predicted values as Series.
+            予測値を含むSeries。
         """
         clean_series = self._validate_series(series)
 
         t = (clean_series.index - clean_series.index[0]).days.values.astype(float)
         y = clean_series.values
 
-        # Build features
+        # 特徴量を構築
         X = [np.ones(len(t))]
         for period in periods:
             X.append(np.sin(2 * np.pi * t / period))
@@ -183,7 +183,7 @@ class FourierDetector(BaseDetector):
             predictions = model.predict(X)
             return pd.Series(predictions, index=clean_series.index)
         except Exception as e:
-            logger.warning(f"Fourier prediction failed: {e}")
+            logger.warning(f"フーリエ予測が失敗しました: {e}")
             return None
 
     def get_delta_r2(
@@ -191,14 +191,14 @@ class FourierDetector(BaseDetector):
         series: pd.Series,
         periods: List[int],
     ) -> Dict[str, float]:
-        """Get delta R² values for analysis.
+        """分析用のデルタR²値を取得する。
 
         Args:
-            series: Input time series.
-            periods: Target periods.
+            series: 入力時系列データ。
+            periods: 対象周期。
 
         Returns:
-            Dictionary mapping period (and 'full') to delta R².
+            周期（および'full'）からデルタR²へのマッピング辞書。
         """
         result = self.detect(series, periods)
 

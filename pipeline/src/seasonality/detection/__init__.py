@@ -1,4 +1,4 @@
-"""Detection module for Seasonality Analyzer."""
+"""Seasonality Analyzerの季節性検出モジュール"""
 
 from seasonality.detection.base import (
     SeasonalityDetector,

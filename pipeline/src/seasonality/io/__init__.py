@@ -1,4 +1,4 @@
-"""IO module for Seasonality Analyzer."""
+"""Seasonality AnalyzerのIOモジュール"""
 
 from seasonality.io.loader import (
     load_sensor_data,

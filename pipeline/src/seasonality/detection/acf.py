@@ -1,4 +1,4 @@
-"""ACF (Autocorrelation Function) detector."""
+"""ACF（自己相関関数）検出器。"""
 
 from __future__ import annotations
 
@@ -13,10 +13,10 @@ from seasonality.detection.base import BaseDetector, DetectionResult, PeriodResu
 
 
 class ACFDetector(BaseDetector):
-    """Seasonality detector using Autocorrelation Function.
+    """自己相関関数を使用した季節性検出器。
 
-    ACF measures the correlation between a time series and its lagged values.
-    Peaks at specific lags indicate periodicity.
+    ACFは時系列データとそのラグ値との相関を測定します。
+    特定のラグでのピークは周期性を示します。
     """
 
     method_name = "acf"
@@ -28,13 +28,13 @@ class ACFDetector(BaseDetector):
         peak_threshold: float = 0.3,
         use_fft: bool = True,
     ):
-        """Initialize ACF detector.
+        """ACF検出器を初期化する。
 
         Args:
-            max_lag: Maximum lag to compute ACF.
-            tolerance: Tolerance for peak detection around target periods.
-            peak_threshold: Threshold for significance (above 95% CI).
-            use_fft: Whether to use FFT for faster computation.
+            max_lag: ACFを計算する最大ラグ。
+            tolerance: 対象周期周辺のピーク検出の許容範囲。
+            peak_threshold: 有意性のしきい値（95%信頼区間以上）。
+            use_fft: より高速な計算にFFTを使用するかどうか。
         """
         self.max_lag = max_lag
         self.tolerance = tolerance
@@ -46,32 +46,32 @@ class ACFDetector(BaseDetector):
         series: pd.Series,
         periods: List[int],
     ) -> DetectionResult:
-        """Detect seasonality using ACF analysis.
+        """ACF分析を使用して季節性を検出する。
 
         Args:
-            series: Input time series (should be preprocessed, no NaN).
-            periods: List of target periods to check.
+            series: 入力時系列データ（前処理済み、NaNなし）。
+            periods: 確認する対象周期のリスト。
 
         Returns:
-            DetectionResult with ACF peak values for each period.
+            各周期のACFピーク値を含むDetectionResult。
         """
         clean_series = self._validate_series(series)
         n = len(clean_series)
 
-        # Adjust max_lag based on data length
+        # データ長に基づいてmax_lagを調整
         max_lag = min(self.max_lag, n // 2 - 1)
         if max_lag < 10:
-            logger.warning(f"ACF: max_lag too small ({max_lag}), results may be unreliable")
+            logger.warning(f"ACF: max_lagが小さすぎます（{max_lag}）、結果が信頼できない可能性があります")
             return self._create_result({})
 
-        # Compute ACF
+        # ACFを計算
         try:
             acf_values = acf(clean_series.values, nlags=max_lag, fft=self.use_fft)
         except Exception as e:
-            logger.warning(f"ACF computation failed: {e}")
+            logger.warning(f"ACF計算が失敗しました: {e}")
             return self._create_result({})
 
-        # 95% confidence interval
+        # 95%信頼区間
         conf_int = 1.96 / np.sqrt(n)
 
         period_results: Dict[int, PeriodResult] = {}
@@ -98,7 +98,7 @@ class ACFDetector(BaseDetector):
         max_lag: int,
         conf_int: float,
     ) -> PeriodResult:
-        """Detect ACF peak for a specific period."""
+        """特定の周期のACFピークを検出する。"""
         if period > max_lag:
             return PeriodResult(
                 period=period,
@@ -107,17 +107,17 @@ class ACFDetector(BaseDetector):
                 details={"error": "period_exceeds_max_lag"},
             )
 
-        # Search range around target period
+        # 対象周期周辺の探索範囲
         start = max(1, period - self.tolerance)
         end = min(max_lag, period + self.tolerance)
 
-        # Find peak in range
+        # 範囲内でピークを検索
         acf_range = acf_values[start:end + 1]
         max_idx = np.argmax(np.abs(acf_range))
         peak_value = acf_range[max_idx]
         actual_lag = start + max_idx
 
-        # Check significance
+        # 有意性を確認
         significant = abs(peak_value) > conf_int and abs(peak_value) > self.peak_threshold
 
         return PeriodResult(
@@ -137,14 +137,14 @@ class ACFDetector(BaseDetector):
         series: pd.Series,
         max_lag: Optional[int] = None,
     ) -> Dict[str, any]:
-        """Compute full ACF for visualization.
+        """可視化用の完全なACFを計算する。
 
         Args:
-            series: Input time series.
-            max_lag: Maximum lag (None uses default).
+            series: 入力時系列データ。
+            max_lag: 最大ラグ（Noneの場合はデフォルトを使用）。
 
         Returns:
-            Dictionary with ACF values and confidence interval.
+            ACF値と信頼区間を含む辞書。
         """
         clean_series = self._validate_series(series)
         n = len(clean_series)

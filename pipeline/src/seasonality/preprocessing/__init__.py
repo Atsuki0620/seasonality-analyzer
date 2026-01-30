@@ -1,4 +1,4 @@
-"""Preprocessing module for Seasonality Analyzer."""
+"""Seasonality Analyzerの前処理モジュール"""
 
 from seasonality.preprocessing.resample import (
     resample_to_daily,

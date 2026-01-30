@@ -1,4 +1,4 @@
-"""Profiling utilities for Seasonality Analyzer."""
+"""季節性分析のためのプロファイリングユーティリティ。"""
 
 from __future__ import annotations
 
@@ -21,16 +21,16 @@ except ImportError:
 
 @dataclass
 class MemorySnapshot:
-    """Memory usage snapshot."""
+    """メモリ使用量のスナップショット。"""
 
     timestamp: datetime
-    rss_mb: float  # Resident Set Size
-    vms_mb: float  # Virtual Memory Size
+    rss_mb: float  # 常駐セットサイズ
+    vms_mb: float  # 仮想メモリサイズ
     percent: float
 
     @classmethod
     def capture(cls) -> "MemorySnapshot":
-        """Capture current memory usage."""
+        """現在のメモリ使用量をキャプチャする。"""
         if not PSUTIL_AVAILABLE:
             return cls(
                 timestamp=datetime.now(),
@@ -51,55 +51,55 @@ class MemorySnapshot:
 
 
 class MemoryTracker:
-    """Track memory usage during processing."""
+    """処理中のメモリ使用量を追跡する。"""
 
     def __init__(self, name: str = "default"):
-        """Initialize tracker.
+        """トラッカーを初期化する。
 
         Args:
-            name: Tracker name for logging.
+            name: ログ用のトラッカー名。
         """
         self.name = name
         self.snapshots: List[MemorySnapshot] = []
         self._start_snapshot: Optional[MemorySnapshot] = None
 
     def start(self) -> "MemoryTracker":
-        """Start tracking."""
+        """追跡を開始する。"""
         gc.collect()
         self._start_snapshot = MemorySnapshot.capture()
         self.snapshots = [self._start_snapshot]
         return self
 
     def checkpoint(self, label: str = "") -> MemorySnapshot:
-        """Take a memory checkpoint.
+        """メモリチェックポイントを作成する。
 
         Args:
-            label: Optional label for the checkpoint.
+            label: チェックポイントのオプションラベル。
 
         Returns:
-            Current memory snapshot.
+            現在のメモリスナップショット。
         """
         snapshot = MemorySnapshot.capture()
         self.snapshots.append(snapshot)
 
         if self._start_snapshot:
             delta = snapshot.rss_mb - self._start_snapshot.rss_mb
-            logger.debug(f"[{self.name}] Memory checkpoint {label}: {snapshot.rss_mb:.1f}MB (delta: {delta:+.1f}MB)")
+            logger.debug(f"[{self.name}] メモリチェックポイント {label}: {snapshot.rss_mb:.1f}MB (差分: {delta:+.1f}MB)")
 
         return snapshot
 
     def stop(self) -> Dict[str, Any]:
-        """Stop tracking and return summary.
+        """追跡を停止してサマリーを返す。
 
         Returns:
-            Dictionary with memory usage summary.
+            メモリ使用量サマリーを含む辞書。
         """
         gc.collect()
         final_snapshot = MemorySnapshot.capture()
         self.snapshots.append(final_snapshot)
 
         if not self._start_snapshot:
-            return {"error": "Tracker not started"}
+            return {"error": "トラッカーが開始されていません"}
 
         delta = final_snapshot.rss_mb - self._start_snapshot.rss_mb
 
@@ -113,8 +113,8 @@ class MemoryTracker:
         }
 
         logger.info(
-            f"[{self.name}] Memory: {summary['start_mb']:.1f}MB -> {summary['end_mb']:.1f}MB "
-            f"(delta: {delta:+.1f}MB, peak: {summary['peak_mb']:.1f}MB)"
+            f"[{self.name}] メモリ: {summary['start_mb']:.1f}MB -> {summary['end_mb']:.1f}MB "
+            f"(差分: {delta:+.1f}MB, ピーク: {summary['peak_mb']:.1f}MB)"
         )
 
         return summary
@@ -122,7 +122,7 @@ class MemoryTracker:
 
 @dataclass
 class TimingResult:
-    """Result of timing measurement."""
+    """タイミング測定の結果。"""
 
     name: str
     start_time: datetime
@@ -131,36 +131,36 @@ class TimingResult:
 
 
 class StepTimer:
-    """Timer for tracking processing steps."""
+    """処理ステップを追跡するためのタイマー。"""
 
     def __init__(self):
-        """Initialize timer."""
+        """タイマーを初期化する。"""
         self.steps: List[TimingResult] = []
         self._current_step: Optional[str] = None
         self._step_start: Optional[datetime] = None
 
     def start_step(self, name: str) -> "StepTimer":
-        """Start timing a step.
+        """ステップのタイミング測定を開始する。
 
         Args:
-            name: Step name.
+            name: ステップ名。
 
         Returns:
-            Self for chaining.
+            チェーン用の自身。
         """
         if self._current_step:
             self.end_step()
 
         self._current_step = name
         self._step_start = datetime.now()
-        logger.debug(f"Started step: {name}")
+        logger.debug(f"ステップを開始: {name}")
         return self
 
     def end_step(self) -> Optional[TimingResult]:
-        """End current step.
+        """現在のステップを終了する。
 
         Returns:
-            Timing result for the step.
+            ステップのタイミング結果。
         """
         if not self._current_step or not self._step_start:
             return None
@@ -176,7 +176,7 @@ class StepTimer:
         )
 
         self.steps.append(result)
-        logger.debug(f"Completed step '{self._current_step}': {duration:.2f}s")
+        logger.debug(f"ステップ '{self._current_step}' を完了: {duration:.2f}秒")
 
         self._current_step = None
         self._step_start = None
@@ -185,10 +185,10 @@ class StepTimer:
 
     @contextmanager
     def step(self, name: str):
-        """Context manager for timing a step.
+        """ステップのタイミング測定用コンテキストマネージャ。
 
         Args:
-            name: Step name.
+            name: ステップ名。
         """
         self.start_step(name)
         try:
@@ -197,10 +197,10 @@ class StepTimer:
             self.end_step()
 
     def summary(self) -> Dict[str, Any]:
-        """Get timing summary.
+        """タイミングサマリーを取得する。
 
         Returns:
-            Dictionary with timing summary.
+            タイミングサマリーを含む辞書。
         """
         if not self.steps:
             return {"total_seconds": 0, "steps": []}
@@ -220,22 +220,22 @@ class StepTimer:
         }
 
     def print_summary(self) -> None:
-        """Print timing summary to logger."""
+        """タイミングサマリーをロガーに出力する。"""
         summary = self.summary()
-        logger.info(f"Total time: {summary['total_seconds']:.2f}s")
+        logger.info(f"合計時間: {summary['total_seconds']:.2f}秒")
         for step in summary["steps"]:
-            logger.info(f"  {step['name']}: {step['duration_seconds']:.2f}s ({step['percent']:.1f}%)")
+            logger.info(f"  {step['name']}: {step['duration_seconds']:.2f}秒 ({step['percent']:.1f}%)")
 
 
 def time_it(func: Callable = None, *, name: str = None):
-    """Decorator to time function execution.
+    """関数実行時間を計測するデコレータ。
 
     Args:
-        func: Function to decorate.
-        name: Optional name for logging.
+        func: デコレートする関数。
+        name: ログ用のオプション名。
 
     Returns:
-        Decorated function.
+        デコレートされた関数。
     """
     def decorator(f):
         @functools.wraps(f)
@@ -245,11 +245,11 @@ def time_it(func: Callable = None, *, name: str = None):
             try:
                 result = f(*args, **kwargs)
                 elapsed = time.perf_counter() - start
-                logger.debug(f"{func_name} completed in {elapsed:.2f}s")
+                logger.debug(f"{func_name} が {elapsed:.2f}秒 で完了")
                 return result
             except Exception as e:
                 elapsed = time.perf_counter() - start
-                logger.error(f"{func_name} failed after {elapsed:.2f}s: {e}")
+                logger.error(f"{func_name} が {elapsed:.2f}秒 後に失敗: {e}")
                 raise
         return wrapper
 

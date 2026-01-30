@@ -1,4 +1,4 @@
-"""Base classes and protocols for seasonality detection."""
+"""季節性検出のための基底クラスとプロトコル。"""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import pandas as pd
 
 @dataclass
 class PeriodResult:
-    """Result for a specific period detection."""
+    """特定の周期検出の結果。"""
 
     period: int
     score: float
@@ -21,7 +21,7 @@ class PeriodResult:
 
 @dataclass
 class DetectionResult:
-    """Result of seasonality detection."""
+    """季節性検出の結果。"""
 
     method: str
     periods: Dict[int, PeriodResult]
@@ -30,19 +30,19 @@ class DetectionResult:
     raw_data: Optional[Dict[str, Any]] = None
 
     def get_score(self, period: int) -> float:
-        """Get score for specific period."""
+        """特定の周期のスコアを取得する。"""
         if period in self.periods:
             return self.periods[period].score
         return 0.0
 
     def is_significant(self, period: int) -> bool:
-        """Check if specific period is significant."""
+        """特定の周期が有意かどうかを確認する。"""
         if period in self.periods:
             return self.periods[period].significant
         return False
 
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary."""
+        """辞書に変換する。"""
         return {
             "method": self.method,
             "max_score": self.max_score,
@@ -59,27 +59,27 @@ class DetectionResult:
 
 
 class SeasonalityDetector(Protocol):
-    """Protocol for seasonality detection methods."""
+    """季節性検出手法のプロトコル。"""
 
     def detect(
         self,
         series: pd.Series,
         periods: List[int],
     ) -> DetectionResult:
-        """Detect seasonality in time series.
+        """時系列データの季節性を検出する。
 
         Args:
-            series: Input time series (should be preprocessed).
-            periods: List of target periods to check.
+            series: 入力時系列データ（前処理済みであること）。
+            periods: 確認する対象周期のリスト。
 
         Returns:
-            DetectionResult with scores for each period.
+            各周期のスコアを含むDetectionResult。
         """
         ...
 
 
 class BaseDetector(ABC):
-    """Abstract base class for seasonality detectors."""
+    """季節性検出器の抽象基底クラス。"""
 
     method_name: str = "base"
 
@@ -89,18 +89,18 @@ class BaseDetector(ABC):
         series: pd.Series,
         periods: List[int],
     ) -> DetectionResult:
-        """Detect seasonality in time series."""
+        """時系列データの季節性を検出する。"""
         pass
 
     def _validate_series(self, series: pd.Series) -> pd.Series:
-        """Validate and clean input series."""
+        """入力時系列データの検証とクリーニング。"""
         if series.empty:
-            raise ValueError("Input series is empty")
+            raise ValueError("入力時系列データが空です")
 
-        # Drop NaN values
+        # NaN値を削除
         clean_series = series.dropna()
         if len(clean_series) == 0:
-            raise ValueError("Series contains only NaN values")
+            raise ValueError("時系列データにNaN値のみが含まれています")
 
         return clean_series
 
@@ -109,7 +109,7 @@ class BaseDetector(ABC):
         periods: Dict[int, PeriodResult],
         raw_data: Optional[Dict[str, Any]] = None,
     ) -> DetectionResult:
-        """Create DetectionResult from period results."""
+        """周期結果からDetectionResultを作成する。"""
         if not periods:
             return DetectionResult(
                 method=self.method_name,

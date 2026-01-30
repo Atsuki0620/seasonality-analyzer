@@ -1,4 +1,4 @@
-"""Seasonality Analyzer - CLI tool for detecting seasonality patterns in time series data."""
+"""Seasonality Analyzer - 時系列データの季節性パターンを検出するCLIツール"""
 
 __version__ = "0.1.0"
 __author__ = "Seasonality Analyzer Team"

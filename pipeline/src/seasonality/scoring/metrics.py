@@ -1,4 +1,4 @@
-"""Scoring metrics for seasonality analysis."""
+"""季節性分析のスコアリングメトリクス。"""
 
 from __future__ import annotations
 
@@ -15,15 +15,15 @@ def normalize_score(
     min_val: float = 0.0,
     max_val: float = 1.0,
 ) -> float:
-    """Normalize a score to 0-1 range.
+    """スコアを0-1の範囲に正規化します。
 
     Args:
-        value: Input value.
-        min_val: Minimum expected value.
-        max_val: Maximum expected value.
+        value: 入力値
+        min_val: 期待される最小値
+        max_val: 期待される最大値
 
     Returns:
-        Normalized value between 0 and 1.
+        0から1の間に正規化された値
     """
     if np.isnan(value):
         return 0.0
@@ -39,25 +39,25 @@ def aggregate_method_scores(
     ensemble_result: EnsembleResult,
     periods: Optional[List[int]] = None,
 ) -> Dict[str, Any]:
-    """Aggregate scores from ensemble result into flat dictionary.
+    """アンサンブル結果のスコアをフラットな辞書に集約します。
 
     Args:
-        ensemble_result: Result from ensemble detection.
-        periods: List of periods to include. If None, uses all.
+        ensemble_result: アンサンブル検出の結果
+        periods: 含める周期のリスト。Noneの場合は全て使用
 
     Returns:
-        Dictionary with aggregated scores.
+        集約されたスコアを含む辞書
     """
     scores = {"sensor": ensemble_result.sensor}
 
-    # Get periods from results if not specified
+    # 指定されていない場合は結果から周期を取得
     if periods is None:
         all_periods = set()
         for result in ensemble_result.results.values():
             all_periods.update(result.periods.keys())
         periods = sorted(all_periods)
 
-    # Extract scores for each method and period
+    # 各手法と周期のスコアを抽出
     for method, result in ensemble_result.results.items():
         max_score = 0.0
 
@@ -69,7 +69,7 @@ def aggregate_method_scores(
 
         scores[f"{method}_max"] = max_score
 
-    # Add combined scores
+    # 統合スコアを追加
     for period in periods:
         scores[f"combined_{period}"] = ensemble_result.combined_scores.get(period, 0.0)
 
@@ -83,14 +83,14 @@ def calculate_composite_score(
     scores: Dict[str, float],
     config: Optional[ScoringConfig] = None,
 ) -> float:
-    """Calculate weighted composite score from method scores.
+    """手法スコアから重み付き総合スコアを計算します。
 
     Args:
-        scores: Dictionary with method scores (e.g., 'stl_max', 'acf_max', 'fourier_full').
-        config: Scoring configuration with weights.
+        scores: 手法スコアを含む辞書（例: 'stl_max', 'acf_max', 'fourier_full'）
+        config: 重みを含むスコアリング設定
 
     Returns:
-        Weighted composite score.
+        重み付き総合スコア
     """
     if config is None:
         weights = {"stl": 0.3, "acf": 0.3, "fourier": 0.4}
@@ -101,7 +101,7 @@ def calculate_composite_score(
     acf_score = scores.get("acf_max", 0.0)
     fourier_score = scores.get("fourier_max", 0.0)
 
-    # Normalize fourier score (delta R² is typically smaller)
+    # フーリエスコアを正規化（delta R²は通常小さい値）
     fourier_normalized = min(fourier_score * 10, 1.0)
 
     composite = (
@@ -117,21 +117,21 @@ def calculate_all_scores(
     ensemble_result: EnsembleResult,
     config: Optional[ScoringConfig] = None,
 ) -> Dict[str, Any]:
-    """Calculate all scores for a single sensor.
+    """単一センサーの全スコアを計算します。
 
     Args:
-        ensemble_result: Result from ensemble detection.
-        config: Scoring configuration.
+        ensemble_result: アンサンブル検出の結果
+        config: スコアリング設定
 
     Returns:
-        Dictionary with all calculated scores.
+        計算された全スコアを含む辞書
     """
     config = config or ScoringConfig()
 
-    # Get aggregated method scores
+    # 集約された手法スコアを取得
     scores = aggregate_method_scores(ensemble_result)
 
-    # Calculate composite score
+    # 総合スコアを計算
     scores["composite_score"] = calculate_composite_score(scores, config)
 
     return scores
@@ -141,14 +141,14 @@ def calculate_period_confidence(
     ensemble_result: EnsembleResult,
     period: int,
 ) -> Dict[str, Any]:
-    """Calculate confidence metrics for a specific period.
+    """特定周期の信頼度メトリクスを計算します。
 
     Args:
-        ensemble_result: Ensemble detection result.
-        period: Target period.
+        ensemble_result: アンサンブル検出結果
+        period: 対象周期
 
     Returns:
-        Dictionary with period-specific confidence metrics.
+        周期固有の信頼度メトリクスを含む辞書
     """
     method_scores = {}
     significant_methods = []

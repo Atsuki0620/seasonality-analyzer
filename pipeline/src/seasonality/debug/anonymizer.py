@@ -1,4 +1,4 @@
-"""Anonymization utilities for debug bundles."""
+"""デバッグバンドルの匿名化ユーティリティ"""
 
 from __future__ import annotations
 
@@ -13,14 +13,14 @@ def anonymize_sensor_names(
     names: List[str],
     prefix: str = "SENSOR_",
 ) -> Dict[str, str]:
-    """Create mapping from original sensor names to anonymized names.
+    """元のセンサー名から匿名化された名前へのマッピングを作成
 
     Args:
-        names: List of original sensor names.
-        prefix: Prefix for anonymized names.
+        names: 元のセンサー名のリスト
+        prefix: 匿名化された名前のプレフィックス
 
     Returns:
-        Dictionary mapping original names to anonymized names.
+        元の名前から匿名化された名前へのマッピング辞書
     """
     mapping = {}
     for i, name in enumerate(sorted(set(names)), start=1):
@@ -32,20 +32,20 @@ def mask_paths(
     text: str,
     patterns: List[str] = None,
 ) -> str:
-    """Mask file paths in text.
+    """テキスト内のファイルパスをマスク
 
     Args:
-        text: Input text.
-        patterns: Additional patterns to mask.
+        text: 入力テキスト
+        patterns: マスクする追加のパターン
 
     Returns:
-        Text with paths masked.
+        パスがマスクされたテキスト
     """
-    # Common path patterns
+    # 一般的なパスパターン
     default_patterns = [
-        r"[A-Za-z]:\\[^\s\"']+",  # Windows paths
-        r"/[^\s\"']+(?:/[^\s\"']+)+",  # Unix paths
-        r"~[^\s\"']+",  # Home directory paths
+        r"[A-Za-z]:\\[^\s\"']+",  # Windowsパス
+        r"/[^\s\"']+(?:/[^\s\"']+)+",  # Unixパス
+        r"~[^\s\"']+",  # ホームディレクトリパス
     ]
 
     patterns = patterns or default_patterns
@@ -62,20 +62,20 @@ def anonymize_dict(
     sensor_mapping: Dict[str, str],
     mask_path_values: bool = True,
 ) -> Dict[str, Any]:
-    """Recursively anonymize dictionary.
+    """辞書を再帰的に匿名化
 
     Args:
-        data: Dictionary to anonymize.
-        sensor_mapping: Sensor name mapping.
-        mask_path_values: Whether to mask path values.
+        data: 匿名化する辞書
+        sensor_mapping: センサー名のマッピング
+        mask_path_values: パス値をマスクするかどうか
 
     Returns:
-        Anonymized dictionary.
+        匿名化された辞書
     """
     result = {}
 
     for key, value in data.items():
-        # Check if key is a sensor name
+        # キーがセンサー名かどうかをチェック
         new_key = sensor_mapping.get(key, key)
 
         if isinstance(value, dict):
@@ -83,12 +83,12 @@ def anonymize_dict(
         elif isinstance(value, list):
             result[new_key] = anonymize_list(value, sensor_mapping, mask_path_values)
         elif isinstance(value, str):
-            # Replace sensor names in string values
+            # 文字列値内のセンサー名を置換
             new_value = value
             for original, anonymized in sensor_mapping.items():
                 new_value = new_value.replace(original, anonymized)
 
-            # Mask paths if needed
+            # 必要に応じてパスをマスク
             if mask_path_values:
                 new_value = mask_paths(new_value)
 
@@ -104,15 +104,15 @@ def anonymize_list(
     sensor_mapping: Dict[str, str],
     mask_path_values: bool = True,
 ) -> List[Any]:
-    """Recursively anonymize list.
+    """リストを再帰的に匿名化
 
     Args:
-        data: List to anonymize.
-        sensor_mapping: Sensor name mapping.
-        mask_path_values: Whether to mask path values.
+        data: 匿名化するリスト
+        sensor_mapping: センサー名のマッピング
+        mask_path_values: パス値をマスクするかどうか
 
     Returns:
-        Anonymized list.
+        匿名化されたリスト
     """
     result = []
 
@@ -139,33 +139,33 @@ def anonymize_bundle(
     sensor_prefix: str = "SENSOR_",
     mask_paths_enabled: bool = True,
 ) -> DebugBundle:
-    """Anonymize a debug bundle.
+    """デバッグバンドルを匿名化
 
     Args:
-        bundle: Debug bundle to anonymize.
-        sensor_prefix: Prefix for anonymized sensor names.
-        mask_paths_enabled: Whether to mask file paths.
+        bundle: 匿名化するデバッグバンドル
+        sensor_prefix: 匿名化されたセンサー名のプレフィックス
+        mask_paths_enabled: ファイルパスをマスクするかどうか
 
     Returns:
-        Anonymized debug bundle.
+        匿名化されたデバッグバンドル
     """
-    # Get sensor names from data summary
+    # データサマリーからセンサー名を取得
     sensor_names = bundle.data_summary.get("sensor_columns", [])
     sensor_mapping = anonymize_sensor_names(sensor_names, sensor_prefix)
 
-    # Anonymize config
+    # 設定を匿名化
     anon_config = anonymize_dict(bundle.config, sensor_mapping, mask_paths_enabled)
 
-    # Anonymize data summary
+    # データサマリーを匿名化
     anon_data_summary = anonymize_dict(bundle.data_summary, sensor_mapping, mask_paths_enabled)
 
-    # Update sensor columns list
+    # センサーカラムリストを更新
     if "sensor_columns" in anon_data_summary:
         anon_data_summary["sensor_columns"] = [
             sensor_mapping.get(s, s) for s in bundle.data_summary.get("sensor_columns", [])
         ]
 
-    # Anonymize health checks
+    # ヘルスチェックを匿名化
     anon_health_checks = []
     for hc in bundle.health_checks:
         anon_hc = type(hc)(
@@ -176,7 +176,7 @@ def anonymize_bundle(
         )
         anon_health_checks.append(anon_hc)
 
-    # Anonymize processing steps
+    # 処理ステップを匿名化
     anon_steps = []
     for step in bundle.processing_steps:
         anon_step = type(step)(
@@ -190,16 +190,16 @@ def anonymize_bundle(
         )
         anon_steps.append(anon_step)
 
-    # Anonymize errors
+    # エラーを匿名化
     anon_errors = anonymize_list(bundle.errors, sensor_mapping, mask_paths_enabled)
 
-    # Anonymize warnings
+    # 警告を匿名化
     anon_warnings = [_anonymize_string(w, sensor_mapping, mask_paths_enabled) for w in bundle.warnings]
 
-    # Anonymize results summary
+    # 結果サマリーを匿名化
     anon_results = anonymize_dict(bundle.results_summary, sensor_mapping, mask_paths_enabled) if bundle.results_summary else None
 
-    # Anonymize log excerpt
+    # ログ抜粋を匿名化
     anon_log = _anonymize_string(bundle.log_excerpt, sensor_mapping, mask_paths_enabled) if bundle.log_excerpt else None
 
     return DebugBundle(
@@ -222,7 +222,7 @@ def _anonymize_string(
     sensor_mapping: Dict[str, str],
     mask_paths_enabled: bool,
 ) -> str:
-    """Anonymize a string value."""
+    """文字列値を匿名化"""
     if not text:
         return text
 

@@ -1,4 +1,4 @@
-"""HTML report generation for seasonality analysis."""
+"""季節性分析のためのHTMLレポート生成モジュール。"""
 
 from __future__ import annotations
 
@@ -16,14 +16,14 @@ from seasonality.config import OutputConfig
 
 
 def figure_to_base64(fig: plt.Figure, format: str = "png") -> str:
-    """Convert matplotlib figure to base64 encoded string.
+    """matplotlibの図をbase64エンコード文字列に変換します。
 
     Args:
-        fig: Matplotlib figure.
-        format: Image format ('png' or 'svg').
+        fig: Matplotlibの図。
+        format: 画像形式（'png'または'svg'）。
 
     Returns:
-        Base64 encoded string.
+        Base64エンコードされた文字列。
     """
     buffer = BytesIO()
     fig.savefig(buffer, format=format, bbox_inches="tight", dpi=150)
@@ -42,19 +42,19 @@ def create_report_figures(
     top_n: int = 10,
     dpi: int = 150,
 ) -> Dict[str, Path]:
-    """Create all report figures and save to disk.
+    """全てのレポート図を作成してディスクに保存します。
 
     Args:
-        df: DataFrame with sensor data.
-        scores_df: DataFrame with scores.
-        sensor_cols: List of sensor columns.
-        periods: Target periods.
-        output_dir: Output directory.
-        top_n: Number of top sensors for detailed reports.
-        dpi: Figure resolution.
+        df: センサーデータを含むDataFrame。
+        scores_df: スコアを含むDataFrame。
+        sensor_cols: センサー列のリスト。
+        periods: ターゲット周期。
+        output_dir: 出力ディレクトリ。
+        top_n: 詳細レポートを作成する上位センサーの数。
+        dpi: 図の解像度。
 
     Returns:
-        Dictionary mapping figure names to paths.
+        図の名前からパスへのマッピング辞書。
     """
     from seasonality.visualization.summary import (
         create_thumbnail_grid,
@@ -67,29 +67,29 @@ def create_report_figures(
 
     saved_figures = {}
 
-    # 1. Thumbnail grid
+    # 1. サムネイルグリッド
     try:
         fig = create_thumbnail_grid(df, sensor_cols, scores_df)
         path = output_dir / "thumbnail_grid.png"
         fig.savefig(path, dpi=dpi, bbox_inches="tight")
         plt.close(fig)
         saved_figures["thumbnail_grid"] = path
-        logger.info(f"Saved: {path}")
+        logger.info(f"保存しました: {path}")
     except Exception as e:
-        logger.warning(f"Failed to create thumbnail grid: {e}")
+        logger.warning(f"サムネイルグリッドの作成に失敗しました: {e}")
 
-    # 2. Confidence distribution
+    # 2. 信頼度分布
     try:
         fig = plot_confidence_distribution(scores_df, mode="strict")
         path = output_dir / "confidence_distribution.png"
         fig.savefig(path, dpi=dpi, bbox_inches="tight")
         plt.close(fig)
         saved_figures["confidence_distribution"] = path
-        logger.info(f"Saved: {path}")
+        logger.info(f"保存しました: {path}")
     except Exception as e:
-        logger.warning(f"Failed to create confidence distribution: {e}")
+        logger.warning(f"信頼度分布の作成に失敗しました: {e}")
 
-    # 3. Detailed reports for top sensors
+    # 3. 上位センサーの詳細レポート
     if "composite_score" in scores_df.columns:
         top_sensors = scores_df.nlargest(top_n, "composite_score").index.tolist()
     else:
@@ -103,9 +103,9 @@ def create_report_figures(
             fig.savefig(path, dpi=dpi, bbox_inches="tight")
             plt.close(fig)
             saved_figures[f"detailed_{sensor}"] = path
-            logger.info(f"Saved: {path}")
+            logger.info(f"保存しました: {path}")
         except Exception as e:
-            logger.warning(f"Failed to create detailed report for {sensor}: {e}")
+            logger.warning(f"{sensor}の詳細レポート作成に失敗しました: {e}")
 
     return saved_figures
 
@@ -115,21 +115,21 @@ def generate_html_report(
     summary_stats: Dict[str, Any],
     figures: Optional[Dict[str, Path]] = None,
     output_path: Optional[Path] = None,
-    title: str = "Seasonality Analysis Report",
+    title: str = "季節性分析レポート",
     config: Optional[Dict[str, Any]] = None,
 ) -> str:
-    """Generate complete HTML report.
+    """完全なHTMLレポートを生成します。
 
     Args:
-        scores_df: DataFrame with scores.
-        summary_stats: Summary statistics dictionary.
-        figures: Dictionary of figure paths.
-        output_path: Path to save HTML file.
-        title: Report title.
-        config: Configuration used for analysis.
+        scores_df: スコアを含むDataFrame。
+        summary_stats: 要約統計の辞書。
+        figures: 図のパスの辞書。
+        output_path: HTMLファイルを保存するパス。
+        title: レポートのタイトル。
+        config: 分析に使用した設定。
 
     Returns:
-        HTML content string.
+        HTMLコンテンツ文字列。
     """
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -146,45 +146,45 @@ def generate_html_report(
         "</head>",
         "<body>",
         f"  <h1>{title}</h1>",
-        f"  <p class='timestamp'>Generated: {timestamp}</p>",
+        f"  <p class='timestamp'>生成日時: {timestamp}</p>",
     ]
 
-    # Configuration section
+    # 設定セクション
     if config:
         html_parts.append("  <section class='config'>")
-        html_parts.append("    <h2>Configuration</h2>")
+        html_parts.append("    <h2>設定</h2>")
         html_parts.append("    <pre>" + _format_config(config) + "</pre>")
         html_parts.append("  </section>")
 
-    # Summary statistics section
+    # 要約統計セクション
     html_parts.append("  <section class='summary'>")
-    html_parts.append("    <h2>Summary Statistics</h2>")
+    html_parts.append("    <h2>要約統計</h2>")
     html_parts.append(_format_summary_stats(summary_stats))
     html_parts.append("  </section>")
 
-    # Figures section
+    # 図のセクション
     if figures:
         html_parts.append("  <section class='figures'>")
-        html_parts.append("    <h2>Visualizations</h2>")
+        html_parts.append("    <h2>可視化</h2>")
 
-        # Thumbnail grid first
+        # サムネイルグリッドを最初に
         if "thumbnail_grid" in figures:
             html_parts.append("    <div class='figure-container'>")
-            html_parts.append("      <h3>Sensor Overview</h3>")
-            html_parts.append(f"      <img src='{figures['thumbnail_grid'].name}' alt='Thumbnail Grid'>")
+            html_parts.append("      <h3>センサー概要</h3>")
+            html_parts.append(f"      <img src='{figures['thumbnail_grid'].name}' alt='サムネイルグリッド'>")
             html_parts.append("    </div>")
 
-        # Confidence distribution
+        # 信頼度分布
         if "confidence_distribution" in figures:
             html_parts.append("    <div class='figure-container'>")
-            html_parts.append("      <h3>Confidence Distribution</h3>")
-            html_parts.append(f"      <img src='{figures['confidence_distribution'].name}' alt='Confidence Distribution'>")
+            html_parts.append("      <h3>信頼度分布</h3>")
+            html_parts.append(f"      <img src='{figures['confidence_distribution'].name}' alt='信頼度分布'>")
             html_parts.append("    </div>")
 
-        # Detailed reports
+        # 詳細レポート
         detailed_figs = [k for k in figures if k.startswith("detailed_")]
         if detailed_figs:
-            html_parts.append("    <h3>Detailed Sensor Reports</h3>")
+            html_parts.append("    <h3>詳細センサーレポート</h3>")
             html_parts.append("    <div class='detailed-reports'>")
             for fig_key in detailed_figs:
                 sensor = fig_key.replace("detailed_", "")
@@ -196,15 +196,15 @@ def generate_html_report(
 
         html_parts.append("  </section>")
 
-    # Scores table section
+    # スコアテーブルセクション
     html_parts.append("  <section class='scores'>")
-    html_parts.append("    <h2>Seasonality Scores</h2>")
+    html_parts.append("    <h2>季節性スコア</h2>")
     html_parts.append(_dataframe_to_html(scores_df))
     html_parts.append("  </section>")
 
     html_parts.extend([
         "  <footer>",
-        "    <p>Generated by Seasonality Analyzer</p>",
+        "    <p>Seasonality Analyzerにより生成</p>",
         "  </footer>",
         "</body>",
         "</html>",
@@ -217,13 +217,13 @@ def generate_html_report(
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(html_content)
-        logger.info(f"Saved HTML report: {output_path}")
+        logger.info(f"HTMLレポートを保存しました: {output_path}")
 
     return html_content
 
 
 def _get_report_css() -> str:
-    """Get CSS styles for HTML report."""
+    """HTMLレポート用のCSSスタイルを取得します。"""
     return """
     * {
       box-sizing: border-box;
@@ -337,24 +337,24 @@ def _get_report_css() -> str:
 
 
 def _format_config(config: Dict[str, Any]) -> str:
-    """Format configuration for display."""
+    """表示用に設定をフォーマットします。"""
     import json
     return json.dumps(config, indent=2, ensure_ascii=False, default=str)
 
 
 def _format_summary_stats(stats: Dict[str, Any]) -> str:
-    """Format summary statistics as HTML."""
+    """要約統計をHTMLとしてフォーマットします。"""
     html = ["<div class='summary-grid'>"]
 
-    # Total sensors
+    # 総センサー数
     html.append(f"""
     <div class='summary-card'>
       <div class='value'>{stats.get('total_sensors', 'N/A')}</div>
-      <div class='label'>Total Sensors</div>
+      <div class='label'>総センサー数</div>
     </div>
     """)
 
-    # Confidence distribution
+    # 信頼度分布
     for mode in ["strict", "exploratory"]:
         dist_key = f"confidence_distribution_{mode}"
         if dist_key in stats:
@@ -362,6 +362,7 @@ def _format_summary_stats(stats: Dict[str, Any]) -> str:
             high = dist.get("High", 0)
             medium = dist.get("Medium", 0)
             low = dist.get("Low", 0)
+            mode_label = "厳格" if mode == "strict" else "探索的"
             html.append(f"""
             <div class='summary-card'>
               <div class='value'>
@@ -369,21 +370,21 @@ def _format_summary_stats(stats: Dict[str, Any]) -> str:
                 <span class='medium'>{medium}</span> /
                 <span class='low'>{low}</span>
               </div>
-              <div class='label'>H/M/L ({mode.capitalize()})</div>
+              <div class='label'>高/中/低 ({mode_label})</div>
             </div>
             """)
 
-    # Composite score stats
+    # 総合スコア統計
     if "composite_score_stats" in stats:
         cs = stats["composite_score_stats"]
         html.append(f"""
         <div class='summary-card'>
           <div class='value'>{cs.get('max', 0):.3f}</div>
-          <div class='label'>Max Composite Score</div>
+          <div class='label'>最大総合スコア</div>
         </div>
         <div class='summary-card'>
           <div class='value'>{cs.get('mean', 0):.3f}</div>
-          <div class='label'>Mean Composite Score</div>
+          <div class='label'>平均総合スコア</div>
         </div>
         """)
 
@@ -392,8 +393,8 @@ def _format_summary_stats(stats: Dict[str, Any]) -> str:
 
 
 def _dataframe_to_html(df: pd.DataFrame, max_rows: int = 100) -> str:
-    """Convert DataFrame to HTML table."""
-    # Select display columns
+    """DataFrameをHTMLテーブルに変換します。"""
+    # 表示列を選択
     priority_cols = [
         "rank", "composite_score", "confidence_strict", "confidence_exploratory",
         "stl_max", "acf_max", "fourier_max", "periodogram_max",
@@ -401,12 +402,12 @@ def _dataframe_to_html(df: pd.DataFrame, max_rows: int = 100) -> str:
     ]
     display_cols = [c for c in priority_cols if c in df.columns]
 
-    # Add remaining columns
+    # 残りの列を追加
     for col in df.columns:
         if col not in display_cols and len(display_cols) < 15:
             display_cols.append(col)
 
-    html = ["<div style='overflow-x: auto;'>", "<table>", "<thead><tr><th>Sensor</th>"]
+    html = ["<div style='overflow-x: auto;'>", "<table>", "<thead><tr><th>センサー</th>"]
     for col in display_cols:
         html.append(f"<th>{col}</th>")
     html.append("</tr></thead>")
@@ -428,7 +429,7 @@ def _dataframe_to_html(df: pd.DataFrame, max_rows: int = 100) -> str:
     html.append("</tbody></table>")
 
     if len(df) > max_rows:
-        html.append(f"<p><em>Showing first {max_rows} of {len(df)} sensors</em></p>")
+        html.append(f"<p><em>{len(df)}センサーのうち最初の{max_rows}件を表示</em></p>")
 
     html.append("</div>")
     return "\n".join(html)

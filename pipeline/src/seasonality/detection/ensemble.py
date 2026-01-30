@@ -1,4 +1,4 @@
-"""Ensemble detector combining multiple detection methods."""
+"""複数の検出手法を組み合わせたアンサンブル検出器。"""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from seasonality.config import DetectionConfig
 
 @dataclass
 class EnsembleResult:
-    """Result from ensemble detection."""
+    """アンサンブル検出の結果。"""
 
     sensor: str
     results: Dict[str, DetectionResult]
@@ -27,7 +27,7 @@ class EnsembleResult:
     max_combined_score: float
 
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for serialization."""
+        """シリアライゼーション用に辞書に変換する。"""
         return {
             "sensor": self.sensor,
             "best_period": self.best_period,
@@ -41,10 +41,10 @@ class EnsembleResult:
 
 
 class EnsembleDetector:
-    """Ensemble detector that combines multiple detection methods.
+    """複数の検出手法を組み合わせたアンサンブル検出器。
 
-    Combines results from STL, ACF, Lomb-Scargle, and Fourier detectors
-    to provide robust seasonality detection.
+    STL、ACF、ロンブ・スカーグル、フーリエ検出器の結果を組み合わせて、
+    ロバストな季節性検出を提供します。
     """
 
     def __init__(
@@ -52,11 +52,11 @@ class EnsembleDetector:
         config: Optional[DetectionConfig] = None,
         methods: Optional[List[str]] = None,
     ):
-        """Initialize ensemble detector.
+        """アンサンブル検出器を初期化する。
 
         Args:
-            config: Detection configuration.
-            methods: List of methods to use. If None, uses config or defaults.
+            config: 検出設定。
+            methods: 使用する手法のリスト。Noneの場合は、configまたはデフォルト値を使用。
         """
         self.config = config or DetectionConfig()
 
@@ -65,7 +65,7 @@ class EnsembleDetector:
         else:
             self.methods = self.config.methods
 
-        # Initialize detectors
+        # 検出器を初期化
         self.detectors: Dict[str, BaseDetector] = {}
 
         if "stl" in self.methods:
@@ -90,7 +90,7 @@ class EnsembleDetector:
         if "fourier" in self.methods:
             self.detectors["fourier"] = FourierDetector()
 
-        logger.debug(f"Initialized EnsembleDetector with methods: {list(self.detectors.keys())}")
+        logger.debug(f"アンサンブル検出器を初期化しました。使用手法: {list(self.detectors.keys())}")
 
     def detect(
         self,
@@ -98,15 +98,15 @@ class EnsembleDetector:
         periods: Optional[List[int]] = None,
         sensor_name: str = "unknown",
     ) -> EnsembleResult:
-        """Run all detection methods on a time series.
+        """時系列データに対してすべての検出手法を実行する。
 
         Args:
-            series: Input time series (should be preprocessed).
-            periods: Target periods. If None, uses config.
-            sensor_name: Name of sensor for logging/results.
+            series: 入力時系列データ（前処理済み）。
+            periods: 対象周期。Noneの場合はconfigを使用。
+            sensor_name: ログ/結果用のセンサー名。
 
         Returns:
-            EnsembleResult with combined results.
+            統合結果を含むEnsembleResult。
         """
         if periods is None:
             periods = self.config.periods
@@ -117,9 +117,9 @@ class EnsembleDetector:
             try:
                 result = detector.detect(series, periods)
                 results[method_name] = result
-                logger.debug(f"{sensor_name}/{method_name}: max_score={result.max_score:.4f}")
+                logger.debug(f"{sensor_name}/{method_name}: 最大スコア={result.max_score:.4f}")
             except Exception as e:
-                logger.warning(f"{sensor_name}/{method_name} failed: {e}")
+                logger.warning(f"{sensor_name}/{method_name} が失敗しました: {e}")
                 results[method_name] = DetectionResult(
                     method=method_name,
                     periods={},
@@ -127,10 +127,10 @@ class EnsembleDetector:
                     best_period=None,
                 )
 
-        # Combine scores
+        # スコアを統合
         combined_scores = self._combine_scores(results, periods)
 
-        # Find best period
+        # 最適周期を検索
         if combined_scores:
             best_period = max(combined_scores.keys(), key=lambda p: combined_scores[p])
             max_score = combined_scores[best_period]
@@ -151,9 +151,9 @@ class EnsembleDetector:
         results: Dict[str, DetectionResult],
         periods: List[int],
     ) -> Dict[int, float]:
-        """Combine scores from multiple methods.
+        """複数の手法からのスコアを統合する。
 
-        Uses simple averaging for now; can be extended for weighted combination.
+        現在は単純平均を使用しています。重み付き統合に拡張可能です。
         """
         combined = {}
 
@@ -176,47 +176,47 @@ class EnsembleDetector:
         sensor_cols: List[str],
         periods: Optional[List[int]] = None,
     ) -> List[EnsembleResult]:
-        """Run detection on multiple sensors.
+        """複数のセンサーに対して検出を実行する。
 
         Args:
-            df: DataFrame with sensor columns.
-            sensor_cols: List of sensor column names.
-            periods: Target periods.
+            df: センサー列を含むDataFrame。
+            sensor_cols: センサー列名のリスト。
+            periods: 対象周期。
 
         Returns:
-            List of EnsembleResults.
+            EnsembleResultのリスト。
         """
         from tqdm import tqdm
 
         results = []
 
-        for sensor in tqdm(sensor_cols, desc="Detecting seasonality"):
+        for sensor in tqdm(sensor_cols, desc="季節性を検出中"):
             if sensor not in df.columns:
-                logger.warning(f"Sensor {sensor} not found in DataFrame")
+                logger.warning(f"センサー {sensor} がDataFrameに見つかりません")
                 continue
 
             series = df[sensor].dropna()
 
             if len(series) < 100:
-                logger.warning(f"Skipping {sensor}: insufficient data ({len(series)} points)")
+                logger.warning(f"{sensor}をスキップします: データ不足（{len(series)}ポイント）")
                 continue
 
             try:
                 result = self.detect(series, periods=periods, sensor_name=sensor)
                 results.append(result)
             except Exception as e:
-                logger.error(f"Detection failed for {sensor}: {e}")
+                logger.error(f"{sensor}の検出が失敗しました: {e}")
 
         return results
 
 
 def create_detector(config: Optional[DetectionConfig] = None) -> EnsembleDetector:
-    """Factory function to create an ensemble detector.
+    """アンサンブル検出器を作成するファクトリー関数。
 
     Args:
-        config: Detection configuration.
+        config: 検出設定。
 
     Returns:
-        Configured EnsembleDetector.
+        設定されたEnsembleDetector。
     """
     return EnsembleDetector(config=config)

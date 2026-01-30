@@ -1,4 +1,4 @@
-"""CLI interface for Seasonality Analyzer."""
+"""Seasonality AnalyzerのCLIインターフェース"""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from seasonality import __version__
 @click.group()
 @click.version_option(version=__version__)
 def main():
-    """Seasonality Analyzer - Detect seasonal patterns in time series data."""
+    """Seasonality Analyzer - 時系列データの季節性パターンを検出"""
     pass
 
 
@@ -26,36 +26,36 @@ def main():
     "--config", "-c",
     type=click.Path(exists=True, path_type=Path),
     default=None,
-    help="Path to configuration YAML file",
+    help="設定YAMLファイルのパス",
 )
 @click.option(
     "--data", "-d",
     type=click.Path(exists=True, path_type=Path),
     required=True,
-    help="Path to input CSV data file",
+    help="入力CSVデータファイルのパス",
 )
 @click.option(
     "--output", "-o",
     type=click.Path(path_type=Path),
     default=Path("outputs"),
-    help="Output directory",
+    help="出力ディレクトリ",
 )
 @click.option(
     "--log-level",
     type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR"]),
     default="INFO",
-    help="Logging level",
+    help="ログレベル",
 )
 @click.option(
     "--no-figures",
     is_flag=True,
-    help="Skip figure generation",
+    help="図の生成をスキップ",
 )
 @click.option(
     "--sensors",
     type=str,
     default=None,
-    help="Comma-separated list of sensor names to analyze (default: all)",
+    help="分析するセンサー名のカンマ区切りリスト（デフォルト: すべて）",
 )
 def run(
     config: Optional[Path],
@@ -65,7 +65,7 @@ def run(
     no_figures: bool,
     sensors: Optional[str],
 ):
-    """Run seasonality analysis pipeline."""
+    """季節性分析パイプラインを実行"""
     from seasonality.config import SeasonalityConfig, load_config
     from seasonality.io.loader import load_sensor_data, validate_data_for_analysis
     from seasonality.io.writer import ensure_output_dirs, save_results
@@ -79,7 +79,7 @@ def run(
 
     sinks: dict[str, int] = {}
 
-    # Setup logging
+    # ログ設定
     output = Path(output)
     log_file = output / "logs" / f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
     sinks = setup_logger(log_file=log_file, level=log_level)
@@ -96,21 +96,21 @@ def run(
     errors = []
 
     try:
-        # Load configuration
+        # 設定読み込み
         with timer.step("load_config"):
             cfg = load_config(config)
             cfg.output.base_dir = Path(output)
-            # Convert config to dict with Path objects as strings
+            # PathオブジェクトをS文字列に変換して設定を辞書化
             config_dict = cfg.model_dump()
             config_dict["output"]["base_dir"] = str(cfg.output.base_dir)
             debug_builder.set_config(config_dict)
             logger.info(f"Scoring mode: {cfg.scoring.mode}")
             logger.info(f"Target periods: {cfg.detection.periods}")
 
-        # Ensure output directories
+        # 出力ディレクトリ作成
         dirs = ensure_output_dirs(cfg.output)
 
-        # Load data
+        # データ読み込み
         with timer.step("load_data"):
             df, health_report = load_sensor_data(data, cfg.data)
             debug_builder.set_data_summary(
@@ -126,27 +126,27 @@ def run(
                 health_report.summary(),
             )
 
-        # Determine sensors to analyze
+        # 分析対象センサーの決定
         if sensors:
             sensor_cols = [s.strip() for s in sensors.split(",")]
             missing = [s for s in sensor_cols if s not in health_report.sensor_columns]
             if missing:
-                logger.warning(f"Sensors not found: {missing}")
+                logger.warning(f"センサーが見つかりません: {missing}")
                 sensor_cols = [s for s in sensor_cols if s in health_report.sensor_columns]
         else:
             sensor_cols = health_report.sensor_columns
 
-        # Validate sensors
+        # センサー検証
         valid_sensors, skipped = validate_data_for_analysis(df, sensor_cols)
-        logger.info(f"Analyzing {len(valid_sensors)} sensors (skipped {len(skipped)})")
+        logger.info(f"{len(valid_sensors)}個のセンサーを分析中（スキップ: {len(skipped)}個）")
 
         if not valid_sensors:
-            raise ValueError("No valid sensors to analyze")
+            raise ValueError("分析可能な有効なセンサーがありません")
 
-        # Preprocess data
+        # データ前処理
         with timer.step("preprocessing"):
             import pandas as pd
-            # Create resampled index from first valid sensor
+            # 最初の有効なセンサーからリサンプルインデックスを作成
             first_sensor_resampled = resample_and_interpolate(
                 df[valid_sensors[0]],
                 resample_freq=cfg.preprocessing.resample_freq,
@@ -172,7 +172,7 @@ def run(
 
         memory.checkpoint("after_preprocessing")
 
-        # Run detection
+        # 季節性検出
         with timer.step("detection"):
             detector = EnsembleDetector(config=cfg.detection)
             ensemble_results = detector.detect_batch(
@@ -189,7 +189,7 @@ def run(
 
         memory.checkpoint("after_detection")
 
-        # Score and rank
+        # スコアリングとランキング
         with timer.step("scoring"):
             scores_df = create_scores_dataframe(ensemble_results, cfg.scoring)
             ranking_df = generate_ranking(scores_df)
@@ -202,7 +202,7 @@ def run(
                 f"Scored {len(scores_df)} sensors",
             )
 
-        # Save results
+        # 結果保存
         with timer.step("save_results"):
             results = {
                 "scores": scores_df,
@@ -212,12 +212,16 @@ def run(
             }
             saved_files = save_results(results, dirs["results"], prefix="seasonality")
 
-        # Generate figures
+        # 図の生成
         if not no_figures:
             with timer.step("visualization"):
                 try:
                     import matplotlib
-                    matplotlib.use("Agg")  # Non-interactive backend
+                    matplotlib.use("Agg")  # 非対話的バックエンド
+
+                    # 日本語フォント設定を初期化
+                    from seasonality.utils.japanese_font import setup_japanese_font
+                    setup_japanese_font()
 
                     figures = create_report_figures(
                         df=processed_df,
@@ -229,7 +233,7 @@ def run(
                         dpi=cfg.output.figure_dpi,
                     )
 
-                    # Generate HTML report
+                    # HTMLレポート生成
                     html_path = dirs["results"] / "report.html"
                     generate_html_report(
                         scores_df=ranking_df,
@@ -239,7 +243,7 @@ def run(
                         config=cfg.model_dump(),
                     )
                 except Exception as e:
-                    logger.warning(f"Visualization failed: {e}")
+                    logger.warning(f"可視化に失敗しました: {e}")
                     errors.append({
                         "error_type": "VisualizationError",
                         "message": str(e),
@@ -247,20 +251,20 @@ def run(
 
         memory.checkpoint("after_visualization")
 
-        # Print summary
+        # サマリー表示
         timer.print_summary()
         memory.stop()
 
-        click.echo("\n=== Analysis Complete ===")
-        click.echo(f"Total sensors analyzed: {len(scores_df)}")
-        click.echo(f"Confidence distribution (strict mode):")
+        click.echo("\n=== 分析完了 ===")
+        click.echo(f"分析したセンサー総数: {len(scores_df)}")
+        click.echo(f"信頼度分布（厳密モード）:")
         for level, count in summary_stats.get("confidence_distribution_strict", {}).items():
             click.echo(f"  {level}: {count}")
-        click.echo(f"\nResults saved to: {dirs['results']}")
-        click.echo(f"Figures saved to: {dirs['figures']}")
-        click.echo(f"Logs saved to: {log_file}")
+        click.echo(f"\n結果保存先: {dirs['results']}")
+        click.echo(f"図の保存先: {dirs['figures']}")
+        click.echo(f"ログ保存先: {log_file}")
 
-        # Save debug bundle
+        # デバッグバンドル保存
         for step in timer.steps:
             debug_builder.add_processing_step(
                 name=step.name,
@@ -274,7 +278,7 @@ def run(
         save_debug_bundle(bundle, bundle_path)
 
     except Exception as e:
-        logger.exception(f"Pipeline failed: {e}")
+        logger.exception(f"パイプライン実行に失敗しました: {e}")
         errors.append({
             "error_type": type(e).__name__,
             "message": str(e),
@@ -285,8 +289,8 @@ def run(
         bundle_path = output / "debug_bundles" / f"bundle_{bundle.bundle_id}.json"
         bundle_path.parent.mkdir(parents=True, exist_ok=True)
         save_debug_bundle(bundle, bundle_path)
-        click.echo(f"Error: {e}", err=True)
-        click.echo(f"Debug bundle saved to: {bundle_path}", err=True)
+        click.echo(f"エラー: {e}", err=True)
+        click.echo(f"デバッグバンドル保存先: {bundle_path}", err=True)
         sys.exit(1)
 
     finally:
@@ -299,23 +303,23 @@ def run(
     "--log",
     type=click.Path(exists=True, path_type=Path),
     required=True,
-    help="Path to log file",
+    help="ログファイルのパス",
 )
 @click.option(
     "--output", "-o",
     type=click.Path(path_type=Path),
     default=Path("outputs/debug_bundles"),
-    help="Output directory for debug bundle",
+    help="デバッグバンドルの出力ディレクトリ",
 )
 def debug(log: Path, output: Path):
-    """Generate debug bundle from log file."""
+    """ログファイルからデバッグバンドルを生成"""
     from seasonality.debug.bundler import DebugBundleBuilder, save_debug_bundle
 
-    click.echo(f"Generating debug bundle from: {log}")
+    click.echo(f"デバッグバンドル生成中: {log}")
 
     builder = DebugBundleBuilder()
 
-    # Read log file
+    # ログファイル読み込み
     with open(log, "r", encoding="utf-8") as f:
         log_content = f.read()
 
@@ -328,11 +332,11 @@ def debug(log: Path, output: Path):
         missing_rate=0,
     )
 
-    # Try to extract errors from log
+    # ログからエラーを抽出
     import re
     error_pattern = r"ERROR.*?:(.*?)(?=\d{4}-\d{2}-\d{2}|$)"
     errors = re.findall(error_pattern, log_content, re.DOTALL)
-    for error in errors[:10]:  # Limit to 10 errors
+    for error in errors[:10]:  # 最大10個のエラーに制限
         builder.add_error("LogError", error.strip()[:500])
 
     bundle = builder.build()
@@ -341,7 +345,7 @@ def debug(log: Path, output: Path):
     bundle_path = output / f"bundle_{bundle.bundle_id}.json"
     save_debug_bundle(bundle, bundle_path, anonymize=True)
 
-    click.echo(f"Debug bundle saved to: {bundle_path}")
+    click.echo(f"デバッグバンドル保存先: {bundle_path}")
 
 
 @main.command()
@@ -349,41 +353,41 @@ def debug(log: Path, output: Path):
     "--bundle", "-b",
     type=click.Path(exists=True, path_type=Path),
     required=True,
-    help="Path to debug bundle JSON file",
+    help="デバッグバンドルJSONファイルのパス",
 )
 def diagnose(bundle: Path):
-    """Run LLM-based diagnostics on debug bundle."""
+    """デバッグバンドルに対してLLMベースの診断を実行"""
     from seasonality.debug.bundler import load_debug_bundle
     from seasonality.debug.llm_client import create_diagnostic_client
 
-    click.echo(f"Loading debug bundle: {bundle}")
+    click.echo(f"デバッグバンドル読み込み中: {bundle}")
     debug_bundle = load_debug_bundle(bundle)
 
-    click.echo("Running diagnostic analysis...")
+    click.echo("診断分析を実行中...")
     client = create_diagnostic_client()
 
     if not client.is_available:
-        click.echo("Warning: LLM provider not configured. Set OPENAI_API_KEY or Azure OpenAI credentials.", err=True)
-        click.echo("\nBasic analysis (without LLM):")
-        click.echo(f"  Bundle ID: {debug_bundle.bundle_id}")
-        click.echo(f"  Created: {debug_bundle.created_at}")
-        click.echo(f"  Errors: {len(debug_bundle.errors)}")
-        click.echo(f"  Warnings: {len(debug_bundle.warnings)}")
+        click.echo("警告: LLMプロバイダーが設定されていません。OPENAI_API_KEYまたはAzure OpenAI認証情報を設定してください。", err=True)
+        click.echo("\n基本分析（LLMなし）:")
+        click.echo(f"  バンドルID: {debug_bundle.bundle_id}")
+        click.echo(f"  作成日時: {debug_bundle.created_at}")
+        click.echo(f"  エラー数: {len(debug_bundle.errors)}")
+        click.echo(f"  警告数: {len(debug_bundle.warnings)}")
 
         if debug_bundle.errors:
-            click.echo("\nErrors found:")
+            click.echo("\n検出されたエラー:")
             for err in debug_bundle.errors[:5]:
                 click.echo(f"  - [{err.get('type', 'Unknown')}] {err.get('message', '')[:100]}")
         return
 
     result = client.diagnose(debug_bundle)
 
-    click.echo(f"\n=== Diagnostic Results ===")
-    click.echo(f"Confidence: {result.confidence}")
-    click.echo(f"\nSummary:\n{result.summary}")
+    click.echo(f"\n=== 診断結果 ===")
+    click.echo(f"信頼度: {result.confidence}")
+    click.echo(f"\n要約:\n{result.summary}")
 
     if result.issues_found:
-        click.echo(f"\nIssues Found ({len(result.issues_found)}):")
+        click.echo(f"\n検出された問題 ({len(result.issues_found)}件):")
         for issue in result.issues_found:
             severity = issue.get("severity", "unknown")
             category = issue.get("category", "unknown")
@@ -391,7 +395,7 @@ def diagnose(bundle: Path):
             click.echo(f"  [{severity.upper()}] ({category}) {desc}")
 
     if result.recommendations:
-        click.echo(f"\nRecommendations:")
+        click.echo(f"\n推奨事項:")
         for rec in result.recommendations:
             click.echo(f"  - {rec}")
 
@@ -401,22 +405,22 @@ def diagnose(bundle: Path):
     "--output", "-o",
     type=click.Path(path_type=Path),
     default=Path("config"),
-    help="Output directory for config files",
+    help="設定ファイルの出力ディレクトリ",
 )
 def init(output: Path):
-    """Initialize configuration files."""
+    """設定ファイルを初期化"""
     from seasonality.config import SeasonalityConfig
 
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
 
-    # Create default config
+    # デフォルト設定を作成
     default_config = SeasonalityConfig()
     default_path = output / "default.yaml"
     default_config.to_yaml(default_path)
     click.echo(f"Created: {default_path}")
 
-    # Create strict mode config
+    # 厳密モード設定を作成
     from seasonality.config import ScoringConfig
     strict_config = SeasonalityConfig(
         scoring=ScoringConfig(mode="strict")
@@ -425,7 +429,7 @@ def init(output: Path):
     strict_config.to_yaml(strict_path)
     click.echo(f"Created: {strict_path}")
 
-    # Create exploratory mode config
+    # 探索モード設定を作成
     exploratory_config = SeasonalityConfig(
         scoring=ScoringConfig(mode="exploratory")
     )
@@ -433,7 +437,7 @@ def init(output: Path):
     exploratory_config.to_yaml(exploratory_path)
     click.echo(f"Created: {exploratory_path}")
 
-    click.echo(f"\nConfiguration files created in: {output}")
+    click.echo(f"\n設定ファイル作成先: {output}")
 
 
 if __name__ == "__main__":

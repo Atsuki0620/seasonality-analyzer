@@ -1,4 +1,4 @@
-"""Lomb-Scargle periodogram detector."""
+"""ロンブ・スカーグル・ペリオドグラム検出器。"""
 
 from __future__ import annotations
 
@@ -15,14 +15,14 @@ try:
     ASTROPY_AVAILABLE = True
 except ImportError:
     ASTROPY_AVAILABLE = False
-    logger.warning("astropy not available. LombScargleDetector will be limited.")
+    logger.warning("astropyが利用できません。LombScargleDetectorの機能が制限されます。")
 
 
 class LombScargleDetector(BaseDetector):
-    """Seasonality detector using Lomb-Scargle periodogram.
+    """ロンブ・スカーグル・ペリオドグラムを使用した季節性検出器。
 
-    Lomb-Scargle is suitable for unevenly sampled data and provides
-    False Alarm Probability (FAP) for significance testing.
+    ロンブ・スカーグルは不均等にサンプリングされたデータに適しており、
+    有意性検定のための誤警報確率（FAP）を提供します。
     """
 
     method_name = "periodogram"
@@ -34,16 +34,16 @@ class LombScargleDetector(BaseDetector):
         fap_threshold: float = 0.05,
         samples_per_peak: int = 10,
     ):
-        """Initialize Lomb-Scargle detector.
+        """ロンブ・スカーグル検出器を初期化する。
 
         Args:
-            min_period: Minimum period to consider (days).
-            max_period: Maximum period to consider (days).
-            fap_threshold: False Alarm Probability threshold.
-            samples_per_peak: Frequency resolution parameter.
+            min_period: 考慮する最小周期（日数）。
+            max_period: 考慮する最大周期（日数）。
+            fap_threshold: 誤警報確率のしきい値。
+            samples_per_peak: 周波数分解能パラメータ。
         """
         if not ASTROPY_AVAILABLE:
-            logger.warning("LombScargleDetector initialized but astropy not available")
+            logger.warning("LombScargleDetectorが初期化されましたが、astropyが利用できません")
 
         self.min_period = min_period
         self.max_period = max_period
@@ -55,29 +55,29 @@ class LombScargleDetector(BaseDetector):
         series: pd.Series,
         periods: List[int],
     ) -> DetectionResult:
-        """Detect seasonality using Lomb-Scargle periodogram.
+        """ロンブ・スカーグル・ペリオドグラムを使用して季節性を検出する。
 
         Args:
-            series: Input time series (should be preprocessed).
-            periods: List of target periods to check.
+            series: 入力時系列データ（前処理済み）。
+            periods: 確認する対象周期のリスト。
 
         Returns:
-            DetectionResult with power and FAP for each period.
+            各周期のパワーとFAPを含むDetectionResult。
         """
         if not ASTROPY_AVAILABLE:
-            logger.error("astropy required for LombScargleDetector")
+            logger.error("LombScargleDetectorにはastropyが必要です")
             return self._create_result({})
 
         clean_series = self._validate_series(series)
 
-        # Convert timestamps to days from start
+        # タイムスタンプを開始からの日数に変換
         t = (clean_series.index - clean_series.index[0]).days.astype(float)
         y = clean_series.values
 
-        # Remove mean
+        # 平均を除去
         y = y - np.mean(y)
 
-        # Create Lomb-Scargle object
+        # ロンブ・スカーグルオブジェクトを作成
         min_freq = 1 / self.max_period
         max_freq = 1 / self.min_period
 
@@ -90,7 +90,7 @@ class LombScargleDetector(BaseDetector):
             )
             computed_periods = 1 / frequency
         except Exception as e:
-            logger.warning(f"Lomb-Scargle computation failed: {e}")
+            logger.warning(f"ロンブ・スカーグル計算が失敗しました: {e}")
             return self._create_result({})
 
         period_results: Dict[int, PeriodResult] = {}
@@ -117,8 +117,8 @@ class LombScargleDetector(BaseDetector):
         powers: np.ndarray,
         target_period: int,
     ) -> PeriodResult:
-        """Detect power and significance for a specific period."""
-        # Search in ±20% range of target period
+        """特定の周期のパワーと有意性を検出する。"""
+        # 対象周期の±20%の範囲で検索
         mask = (periods > target_period * 0.8) & (periods < target_period * 1.2)
 
         if mask.sum() == 0:
@@ -129,7 +129,7 @@ class LombScargleDetector(BaseDetector):
                 details={"error": "period_out_of_range"},
             )
 
-        # Find peak in range
+        # 範囲内でピークを検索
         range_powers = powers[mask]
         range_periods = periods[mask]
         max_idx = np.argmax(range_powers)
@@ -137,7 +137,7 @@ class LombScargleDetector(BaseDetector):
         peak_power = float(range_powers[max_idx])
         actual_period = float(range_periods[max_idx])
 
-        # Calculate False Alarm Probability
+        # 誤警報確率を計算
         try:
             fap = float(ls.false_alarm_probability(peak_power))
         except Exception:
@@ -145,7 +145,7 @@ class LombScargleDetector(BaseDetector):
 
         significant = fap < self.fap_threshold
 
-        # Normalize power to 0-1 range (rough approximation)
+        # パワーを0-1の範囲に正規化（おおよその近似）
         score = min(peak_power, 1.0)
 
         return PeriodResult(
@@ -164,13 +164,13 @@ class LombScargleDetector(BaseDetector):
         self,
         series: pd.Series,
     ) -> Optional[Dict[str, any]]:
-        """Compute full periodogram for visualization.
+        """可視化用の完全なペリオドグラムを計算する。
 
         Args:
-            series: Input time series.
+            series: 入力時系列データ。
 
         Returns:
-            Dictionary with frequencies, powers, and periods.
+            周波数、パワー、周期を含む辞書。
         """
         if not ASTROPY_AVAILABLE:
             return None
@@ -197,5 +197,5 @@ class LombScargleDetector(BaseDetector):
                 "periods": (1 / frequency).tolist(),
             }
         except Exception as e:
-            logger.warning(f"Periodogram computation failed: {e}")
+            logger.warning(f"ペリオドグラム計算が失敗しました: {e}")
             return None

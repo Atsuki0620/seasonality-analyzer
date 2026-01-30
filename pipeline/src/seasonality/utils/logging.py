@@ -1,4 +1,4 @@
-"""Logging utilities for Seasonality Analyzer."""
+"""季節性分析のためのロギングユーティリティ。"""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Optional
 
 from loguru import logger
 
-# Track sink IDs so we can close file handles explicitly (important on Windows).
+# シンクIDを追跡してファイルハンドルを明示的に閉じる（Windows では重要）。
 
 
 def setup_logger(
@@ -18,21 +18,21 @@ def setup_logger(
     retention: str = "7 days",
     console: bool = True,
 ) -> dict[str, int]:
-    """Configure loguru logger.
+    """loguru ロガーを設定する。
 
     Args:
-        log_file: Path to log file. If None, file logging is disabled.
-        level: Log level (DEBUG, INFO, WARNING, ERROR).
-        rotation: Log rotation setting.
-        retention: Log retention setting.
-        console: Whether to enable console logging.
+        log_file: ログファイルへのパス。Noneの場合、ファイルログは無効化される。
+        level: ログレベル（DEBUG、INFO、WARNING、ERROR）。
+        rotation: ログローテーション設定。
+        retention: ログ保持設定。
+        console: コンソールログを有効化するかどうか。
     """
-    # Remove default handler
+    # デフォルトハンドラを削除
     logger.remove()
 
     sink_ids: dict[str, int] = {}
 
-    # Console handler
+    # コンソールハンドラ
     if console:
         sink_ids["console"] = logger.add(
             sys.stderr,
@@ -41,7 +41,7 @@ def setup_logger(
             colorize=True,
         )
 
-    # File handler
+    # ファイルハンドラ
     if log_file:
         log_file = Path(log_file)
         log_file.parent.mkdir(parents=True, exist_ok=True)
@@ -59,13 +59,13 @@ def setup_logger(
 
 
 def get_logger(name: str = None):
-    """Get logger instance.
+    """ロガーインスタンスを取得する。
 
     Args:
-        name: Logger name (for context).
+        name: ロガー名（コンテキスト用）。
 
     Returns:
-        Logger instance.
+        ロガーインスタンス。
     """
     if name:
         return logger.bind(name=name)
@@ -73,14 +73,14 @@ def get_logger(name: str = None):
 
 
 def shutdown_logger(sink_ids: dict[str, int] | None = None) -> None:
-    """Remove sinks to close file handles.
+    """シンクを削除してファイルハンドルを閉じる。
 
-    Loguru keeps file handles open until a sink is removed. On Windows this
-    prevents TemporaryDirectory from deleting the log file at teardown, so we
-    explicitly remove the sinks that were registered by :func:`setup_logger`.
+    Loguruはシンクが削除されるまでファイルハンドルを開いたままにする。Windowsでは
+    これによりTemporaryDirectoryがクリーンアップ時にログファイルを削除できないため、
+    :func:`setup_logger`によって登録されたシンクを明示的に削除する。
 
     Args:
-        sink_ids: Dictionary returned by ``setup_logger``.
+        sink_ids: ``setup_logger``が返す辞書。
     """
 
     if not sink_ids:
@@ -90,25 +90,25 @@ def shutdown_logger(sink_ids: dict[str, int] | None = None) -> None:
         try:
             logger.remove(sink_id)
         except Exception:
-            # Fail-safe: ignore errors during shutdown
+            # フェイルセーフ：シャットダウン中のエラーは無視
             continue
 
 
 class LogContext:
-    """Context manager for adding context to log messages."""
+    """ログメッセージにコンテキストを追加するためのコンテキストマネージャ。"""
 
     def __init__(self, **context):
-        """Initialize with context key-value pairs."""
+        """コンテキストのキーと値のペアで初期化する。"""
         self.context = context
         self._token = None
 
     def __enter__(self):
-        """Enter context."""
+        """コンテキストに入る。"""
         self._token = logger.contextualize(**self.context)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Exit context."""
+        """コンテキストから出る。"""
         if self._token:
             self._token.__exit__(exc_type, exc_val, exc_tb)
         return False

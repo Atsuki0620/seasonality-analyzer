@@ -1,4 +1,4 @@
-"""Scoring module for Seasonality Analyzer."""
+"""Seasonality Analyzerのスコアリングモジュール"""
 
 from seasonality.scoring.metrics import (
     calculate_composite_score,
